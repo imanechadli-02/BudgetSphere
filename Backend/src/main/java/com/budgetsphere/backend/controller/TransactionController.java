@@ -6,10 +6,9 @@ import com.budgetsphere.backend.entity.TransactionType;
 import com.budgetsphere.backend.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/transactions")
@@ -24,13 +23,20 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionDto>> getAll() {
-        return ResponseEntity.ok(transactionService.getAll());
+    public ResponseEntity<Page<TransactionDto>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "date") String sortBy) {
+        return ResponseEntity.ok(transactionService.getAll(page, size, sortBy));
     }
 
     @GetMapping("/type/{type}")
-    public ResponseEntity<List<TransactionDto>> getByType(@PathVariable TransactionType type) {
-        return ResponseEntity.ok(transactionService.getByType(type));
+    public ResponseEntity<Page<TransactionDto>> getByType(
+            @PathVariable TransactionType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "date") String sortBy) {
+        return ResponseEntity.ok(transactionService.getByType(type, page, size, sortBy));
     }
 
     @PutMapping("/{id}")

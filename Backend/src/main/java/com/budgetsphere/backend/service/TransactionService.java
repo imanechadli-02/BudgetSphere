@@ -9,6 +9,10 @@ import com.budgetsphere.backend.mapper.TransactionMapper;
 import com.budgetsphere.backend.repository.TransactionRepository;
 import com.budgetsphere.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -34,14 +38,16 @@ public class TransactionService {
         return transactionMapper.toDto(transactionRepository.save(transaction));
     }
 
-    public List<TransactionDto> getAll() {
-        return transactionRepository.findByUserId(getCurrentUser().getId())
-                .stream().map(transactionMapper::toDto).toList();
+    public Page<TransactionDto> getAll(int page, int size, String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+        return transactionRepository.findByUserId(getCurrentUser().getId(), pageable)
+                .map(transactionMapper::toDto);
     }
 
-    public List<TransactionDto> getByType(TransactionType type) {
-        return transactionRepository.findByUserIdAndType(getCurrentUser().getId(), type)
-                .stream().map(transactionMapper::toDto).toList();
+    public Page<TransactionDto> getByType(TransactionType type, int page, int size, String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+        return transactionRepository.findByUserIdAndType(getCurrentUser().getId(), type, pageable)
+                .map(transactionMapper::toDto);
     }
 
     public TransactionDto update(Long id, TransactionRequest request) {
