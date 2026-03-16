@@ -16,7 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -38,16 +38,24 @@ public class TransactionService {
         return transactionMapper.toDto(transactionRepository.save(transaction));
     }
 
-    public Page<TransactionDto> getAll(int page, int size, String sortBy) {
+    public Page<TransactionDto> getAll(int page, int size, String sortBy, LocalDate from, LocalDate to) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
-        return transactionRepository.findByUserId(getCurrentUser().getId(), pageable)
-                .map(transactionMapper::toDto);
+        Long userId = getCurrentUser().getId();
+        if (from != null && to != null) {
+            return transactionRepository.findByUserIdAndDateBetween(userId, from, to, pageable)
+                    .map(transactionMapper::toDto);
+        }
+        return transactionRepository.findByUserId(userId, pageable).map(transactionMapper::toDto);
     }
 
-    public Page<TransactionDto> getByType(TransactionType type, int page, int size, String sortBy) {
+    public Page<TransactionDto> getByType(TransactionType type, int page, int size, String sortBy, LocalDate from, LocalDate to) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
-        return transactionRepository.findByUserIdAndType(getCurrentUser().getId(), type, pageable)
-                .map(transactionMapper::toDto);
+        Long userId = getCurrentUser().getId();
+        if (from != null && to != null) {
+            return transactionRepository.findByUserIdAndTypeAndDateBetween(userId, type, from, to, pageable)
+                    .map(transactionMapper::toDto);
+        }
+        return transactionRepository.findByUserIdAndType(userId, type, pageable).map(transactionMapper::toDto);
     }
 
     public TransactionDto update(Long id, TransactionRequest request) {

@@ -7,8 +7,11 @@ import com.budgetsphere.backend.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/user/transactions")
@@ -26,8 +29,10 @@ public class TransactionController {
     public ResponseEntity<Page<TransactionDto>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "date") String sortBy) {
-        return ResponseEntity.ok(transactionService.getAll(page, size, sortBy));
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(transactionService.getAll(page, size, sortBy, from, to));
     }
 
     @GetMapping("/type/{type}")
@@ -35,8 +40,10 @@ public class TransactionController {
             @PathVariable TransactionType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "date") String sortBy) {
-        return ResponseEntity.ok(transactionService.getByType(type, page, size, sortBy));
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(transactionService.getByType(type, page, size, sortBy, from, to));
     }
 
     @PutMapping("/{id}")
