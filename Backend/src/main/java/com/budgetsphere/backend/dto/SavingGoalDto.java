@@ -15,8 +15,12 @@ public class SavingGoalDto {
     private String title;
     private BigDecimal targetAmount;
     private BigDecimal currentAmount;
+    private BigDecimal remainingAmount;
     private LocalDate deadline;
     private BigDecimal monthlyContribution;
     private double progressPercentage;
+    private long daysRemaining;
+    private long monthsRemaining;
+    private boolean isAchieved;
     private Long userId;
 }
