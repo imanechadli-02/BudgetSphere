@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Épargne – Personal Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
+    .input-field { background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 12px; padding: 10px 16px; font-size: 14px; width: 100%; transition: all 0.2s; }
+    .input-field:focus { outline: none; border-color: #6366f1; }
+    .input-field option { background: #1e293b; }
+    .goal-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; transition: all 0.3s; }
+    .goal-card:hover { border-color: #6366f1; transform: translateY(-2px); }
+    .progress-bar { height: 10px; border-radius: 999px; background: #334155; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; transition: width 0.8s ease; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="lg:ml-64 p-6 min-h-screen">
+    <div class="mt-8 lg:mt-0 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Objectifs d'Épargne</h1>
+        <p class="text-slate-400 text-sm mt-1">Suivez et atteignez vos objectifs financiers</p>
+      </div>
+      <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nouvel Objectif
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Total Épargné</p>
+        <p class="text-3xl font-bold text-indigo-400" id="kpi-total">0 €</p>
+        <p class="text-slate-500 text-xs mt-1">sur tous les objectifs</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Objectifs Actifs</p>
+        <p class="text-3xl font-bold text-white" id="kpi-active">0</p>
+        <p class="text-slate-500 text-xs mt-1">en cours</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Objectifs Atteints</p>
+        <p class="text-3xl font-bold text-green-400" id="kpi-done">0</p>
+        <p class="text-slate-500 text-xs mt-1">complétés</p>
+      </div>
+    </div>
+
+    <!-- Chart + Goals -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <h2 class="text-white font-semibold mb-4">Progression Globale</h2>
+        <canvas id="radarChart" height="220"></canvas>
+      </div>
+      <div class="xl:col-span-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="goals-grid"></div>
+      </div>
+    </div>
+
+    <!-- Savings History -->
+    <div class="card p-5">
+      <h2 class="text-white font-semibold mb-4">Historique des Versements</h2>
+      <canvas id="lineChart" height="100"></canvas>
+    </div>
+  </main>
+
+  <!-- Goal Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-white font-semibold text-lg" id="modal-title">Nouvel Objectif</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveGoal(event)" class="space-y-4">
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Nom de l'objectif</label>
+          <input type="text" id="g-name" placeholder="Ex: Vacances d'été" class="input-field" required/>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Icône</label>
+          <div class="flex gap-2 flex-wrap" id="icon-picker">
+            <span>🏖️</span><span>🚗</span><span>🏠</span><span>💻</span><span>✈️</span>
+            <span>🎓</span><span>💍</span><span>🏋️</span><span>📱</span><span>🎯</span>
+          </div>
+          <input type="hidden" id="g-icon" value="🎯"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Montant cible (€)</label>
+            <input type="number" id="g-target" placeholder="5000" min="1" class="input-field" required/>
+          </div>
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Déjà épargné (€)</label>
+            <input type="number" id="g-current" placeholder="0" min="0" value="0" class="input-field"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Date cible</label>
+            <input type="date" id="g-date" class="input-field" required/>
+          </div>
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Versement mensuel</label>
+            <input type="number" id="g-monthly" placeholder="200" min="0" class="input-field"/>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deposit Modal -->
+  <div id="deposit-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm">
+      <h3 class="text-white font-semibold mb-4">Ajouter un Versement</h3>
+      <p class="text-slate-400 text-sm mb-4" id="deposit-goal-name"></p>
+      <input type="number" id="deposit-amount" placeholder="Montant (€)" min="1" class="input-field mb-4"/>
+      <div class="flex gap-3">
+        <button onclick="closeDepositModal()" class="flex-1 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm">Annuler</button>
+        <button onclick="confirmDeposit()" class="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium">Verser</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script>
+    document.getElementById('nav-container').innerHTML = renderNav('savings');
+
+    const goalColors = ['#6366f1','#a855f7','#22c55e','#eab308','#ec4899','#06b6d4'];
+    let goals = [
+      { id:1, name:'Vacances Été', icon:'🏖️', target:2000, current:1200, date:'2024-07-01', monthly:200 },
+      { id:2, name:'Nouvelle Voiture', icon:'🚗', target:15000, current:4500, date:'2026-01-01', monthly:500 },
+      { id:3, name:'Fonds d\'urgence', icon:'🛡️', target:5000, current:3000, date:'2024-12-31', monthly:300 },
+      { id:4, name:'MacBook Pro', icon:'💻', target:2500, current:2500, date:'2024-03-01', monthly:0 },
+    ];
+    let editId = null;
+    let depositIdx = null;
+
+    // Icon picker
+    document.querySelectorAll('#icon-picker span').forEach(el => {
+      el.className = 'cursor-pointer text-2xl p-1.5 rounded-lg hover:bg-slate-700 transition-all';
+      el.onclick = () => {
+        document.querySelectorAll('#icon-picker span').forEach(s => s.classList.remove('bg-indigo-600/30', 'ring-2', 'ring-indigo-500'));
+        el.classList.add('bg-indigo-600/30', 'ring-2', 'ring-indigo-500');
+        document.getElementById('g-icon').value = el.textContent;
+      };
+    });
+
+    function daysLeft(dateStr) {
+      const diff = new Date(dateStr) - new Date();
+      return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+
+    function renderGoals() {
+      const total = goals.reduce((s, g) => s + g.current, 0);
+      const done = goals.filter(g => g.current >= g.target).length;
+      document.getElementById('kpi-total').textContent = total.toLocaleString() + ' €';
+      document.getElementById('kpi-active').textContent = goals.length - done;
+      document.getElementById('kpi-done').textContent = done;
+
+      document.getElementById('goals-grid').innerHTML = goals.map((g, i) => {
+        const pct = Math.min(Math.round((g.current / g.target) * 100), 100);
+        const completed = g.current >= g.target;
+        const color = goalColors[i % goalColors.length];
+        const days = daysLeft(g.date);
+        const remaining = g.target - g.current;
+        return `
+        <div class="goal-card p-5">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background:${color}20">${g.icon}</div>
+              <div>
+                <p class="text-white font-semibold">${g.name}</p>
+                <p class="text-slate-500 text-xs">${days > 0 ? days + ' jours restants' : 'Échéance dépassée'}</p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button onclick="openDepositModal(${i})" class="p-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all" title="Verser">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              </button>
+              <button onclick="editGoal(${i})" class="p-1.5 rounded-lg bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+              <button onclick="deleteGoal(${i})" class="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-white font-bold">${g.current.toLocaleString()} €</span>
+            <span class="text-slate-400">${g.target.toLocaleString()} €</span>
+          </div>
+          <div class="progress-bar mb-2">
+            <div class="progress-fill" style="width:${pct}%; background:${color}"></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold" style="color:${color}">${pct}%</span>
+            ${completed
+              ? '<span class="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400 font-medium">✓ Atteint</span>'
+              : `<span class="text-slate-500 text-xs">${remaining.toLocaleString()} € restants</span>`}
+          </div>
+          ${g.monthly > 0 ? `<p class="text-slate-600 text-xs mt-2">Versement mensuel: ${g.monthly} €</p>` : ''}
+        </div>`;
+      }).join('');
+
+      renderRadar();
+    }
+
+    let radarChart;
+    function renderRadar() {
+      if (radarChart) radarChart.destroy();
+      radarChart = new Chart(document.getElementById('radarChart').getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: goals.map(g => g.name.length > 10 ? g.name.substring(0,10)+'…' : g.name),
+          datasets: [{
+            label: 'Progression %',
+            data: goals.map(g => Math.min(Math.round((g.current / g.target) * 100), 100)),
+            backgroundColor: 'rgba(99,102,241,0.2)',
+            borderColor: '#6366f1',
+            pointBackgroundColor: '#6366f1',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { r: { min: 0, max: 100, ticks: { color: '#64748b', stepSize: 25 }, grid: { color: '#334155' }, pointLabels: { color: '#94a3b8', font: { size: 11 } } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // Line chart (savings history)
+    new Chart(document.getElementById('lineChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['Août','Sep','Oct','Nov','Déc','Jan'],
+        datasets: [
+          { label: 'Vacances', data: [600,800,900,1000,1100,1200], borderColor: '#6366f1', tension: 0.4, fill: false, pointRadius: 3 },
+          { label: 'Voiture', data: [2500,3000,3500,3800,4200,4500], borderColor: '#a855f7', tension: 0.4, fill: false, pointRadius: 3 },
+          { label: 'Urgence', data: [1500,1800,2100,2400,2700,3000], borderColor: '#22c55e', tension: 0.4, fill: false, pointRadius: 3 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+        scales: { x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }, y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } } }
+      }
+    });
+
+    function openModal() {
+      editId = null;
+      document.getElementById('modal-title').textContent = 'Nouvel Objectif';
+      document.getElementById('g-name').value = '';
+      document.getElementById('g-target').value = '';
+      document.getElementById('g-current').value = '0';
+      document.getElementById('g-monthly').value = '';
+      document.getElementById('g-date').value = '';
+      document.getElementById('g-icon').value = '🎯';
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function editGoal(i) {
+      const g = goals[i];
+      editId = i;
+      document.getElementById('modal-title').textContent = 'Modifier l\'Objectif';
+      document.getElementById('g-name').value = g.name;
+      document.getElementById('g-target').value = g.target;
+      document.getElementById('g-current').value = g.current;
+      document.getElementById('g-monthly').value = g.monthly;
+      document.getElementById('g-date').value = g.date;
+      document.getElementById('g-icon').value = g.icon;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    function saveGoal(e) {
+      e.preventDefault();
+      const data = {
+        id: editId !== null ? goals[editId].id : Date.now(),
+        name: document.getElementById('g-name').value,
+        icon: document.getElementById('g-icon').value || '🎯',
+        target: parseFloat(document.getElementById('g-target').value),
+        current: parseFloat(document.getElementById('g-current').value) || 0,
+        date: document.getElementById('g-date').value,
+        monthly: parseFloat(document.getElementById('g-monthly').value) || 0,
+      };
+      if (editId !== null) goals[editId] = data;
+      else goals.push(data);
+      renderGoals();
+      closeModal();
+    }
+
+    function deleteGoal(i) { goals.splice(i, 1); renderGoals(); }
+
+    function openDepositModal(i) {
+      depositIdx = i;
+      document.getElementById('deposit-goal-name').textContent = `Objectif: ${goals[i].name}`;
+      document.getElementById('deposit-amount').value = '';
+      document.getElementById('deposit-modal').classList.remove('hidden');
+    }
+    function closeDepositModal() { document.getElementById('deposit-modal').classList.add('hidden'); depositIdx = null; }
+    function confirmDeposit() {
+      const amt = parseFloat(document.getElementById('deposit-amount').value);
+      if (amt > 0 && depositIdx !== null) {
+        goals[depositIdx].current = Math.min(goals[depositIdx].current + amt, goals[depositIdx].target);
+        renderGoals();
+      }
+      closeDepositModal();
+    }
+
+    renderGoals();
+  </script>
+</body>
+</html>

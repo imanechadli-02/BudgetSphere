@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dépenses – Personal Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
+    .input-field { background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 12px; padding: 10px 16px; font-size: 14px; width: 100%; transition: all 0.2s; }
+    .input-field:focus { outline: none; border-color: #6366f1; }
+    .input-field option { background: #1e293b; }
+    .progress-bar { height: 8px; border-radius: 999px; background: #334155; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="lg:ml-64 p-6 min-h-screen">
+    <div class="mt-8 lg:mt-0 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Dépenses & Budgets</h1>
+        <p class="text-slate-400 text-sm mt-1">Suivez vos dépenses et gérez vos plafonds</p>
+      </div>
+      <div class="flex gap-3">
+        <select id="month-select" onchange="renderAll()" class="input-field w-auto">
+          <option value="01">Janvier 2024</option>
+          <option value="02">Février 2024</option>
+          <option value="03">Mars 2024</option>
+        </select>
+        <button onclick="openBudgetModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Nouveau Budget
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Total Dépensé</p>
+        <p class="text-3xl font-bold text-red-400">1 890 €</p>
+        <p class="text-slate-500 text-xs mt-1">sur 2 000 € budgétés</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Reste à Dépenser</p>
+        <p class="text-3xl font-bold text-green-400">110 €</p>
+        <p class="text-slate-500 text-xs mt-1">5.5% du budget restant</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-1">Catégories Dépassées</p>
+        <p class="text-3xl font-bold text-yellow-400">1</p>
+        <p class="text-slate-500 text-xs mt-1">sur 6 catégories</p>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="text-white font-semibold mb-4">Dépenses par Catégorie</h2>
+        <canvas id="barChart" height="130"></canvas>
+      </div>
+      <div class="card p-5">
+        <h2 class="text-white font-semibold mb-4">Répartition</h2>
+        <canvas id="pieChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Budget Cards -->
+    <div class="mb-6">
+      <h2 class="text-white font-semibold mb-4">Suivi des Budgets</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" id="budget-cards"></div>
+    </div>
+
+    <!-- Expense List -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-white font-semibold">Détail des Dépenses</h2>
+        <input type="text" placeholder="🔍 Rechercher..." oninput="filterExpenses(this.value)" class="input-field w-48"/>
+      </div>
+      <div class="space-y-2" id="expense-list"></div>
+    </div>
+  </main>
+
+  <!-- Budget Modal -->
+  <div id="budget-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-white font-semibold">Définir un Budget</h3>
+        <button onclick="closeBudgetModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveBudget(event)" class="space-y-4">
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Catégorie</label>
+          <select id="b-cat" class="input-field">
+            <option>Alimentation</option><option>Logement</option><option>Transport</option>
+            <option>Loisirs</option><option>Santé</option><option>Autre</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Plafond mensuel (€)</label>
+          <input type="number" id="b-limit" placeholder="Ex: 400" min="1" class="input-field" required/>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="closeBudgetModal()" class="flex-1 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script>
+    document.getElementById('nav-container').innerHTML = renderNav('expenses');
+
+    const catColors = {
+      Alimentation: { bar: '#6366f1', pie: '#6366f1', bg: 'bg-indigo-500/20', text: 'text-indigo-400', icon: '🛒' },
+      Logement:     { bar: '#a855f7', pie: '#a855f7', bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '🏠' },
+      Transport:    { bar: '#ec4899', pie: '#ec4899', bg: 'bg-pink-500/20',   text: 'text-pink-400',   icon: '🚗' },
+      Loisirs:      { bar: '#eab308', pie: '#eab308', bg: 'bg-yellow-500/20', text: 'text-yellow-400', icon: '🎬' },
+      Santé:        { bar: '#22c55e', pie: '#22c55e', bg: 'bg-green-500/20',  text: 'text-green-400',  icon: '💊' },
+      Autre:        { bar: '#64748b', pie: '#64748b', bg: 'bg-slate-500/20',  text: 'text-slate-400',  icon: '📦' },
+    };
+
+    let budgets = [
+      { cat: 'Alimentation', limit: 400, spent: 172 },
+      { cat: 'Logement',     limit: 900, spent: 850 },
+      { cat: 'Transport',    limit: 150, spent: 65  },
+      { cat: 'Loisirs',      limit: 100, spent: 125 },
+      { cat: 'Santé',        limit: 80,  spent: 32  },
+      { cat: 'Autre',        limit: 200, spent: 80  },
+    ];
+
+    const expenses = [
+      { desc: 'Loyer', cat: 'Logement',     amount: 850, date: '2024-01-05' },
+      { desc: 'Courses Carrefour', cat: 'Alimentation', amount: 124, date: '2024-01-12' },
+      { desc: 'Netflix', cat: 'Loisirs',    amount: 15,  date: '2024-01-11' },
+      { desc: 'Essence', cat: 'Transport',  amount: 65,  date: '2024-01-09' },
+      { desc: 'Restaurant', cat: 'Alimentation', amount: 48, date: '2024-01-08' },
+      { desc: 'Pharmacie', cat: 'Santé',    amount: 32,  date: '2024-01-07' },
+      { desc: 'Spotify', cat: 'Loisirs',    amount: 10,  date: '2024-01-06' },
+      { desc: 'Cinéma', cat: 'Loisirs',     amount: 25,  date: '2024-01-04' },
+      { desc: 'Supermarché', cat: 'Alimentation', amount: 75, date: '2024-01-03' },
+      { desc: 'Divers', cat: 'Autre',       amount: 80,  date: '2024-01-02' },
+    ];
+
+    function renderBudgetCards() {
+      document.getElementById('budget-cards').innerHTML = budgets.map((b, i) => {
+        const pct = Math.min(Math.round((b.spent / b.limit) * 100), 100);
+        const over = b.spent > b.limit;
+        const c = catColors[b.cat] || catColors['Autre'];
+        return `
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">${c.icon}</span>
+              <span class="text-white font-medium text-sm">${b.cat}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              ${over ? '<span class="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400 font-medium">Dépassé</span>' : ''}
+              <button onclick="deleteBudget(${i})" class="text-slate-600 hover:text-red-400 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="${over ? 'text-red-400' : 'text-white'} font-semibold">${b.spent} €</span>
+            <span class="text-slate-400">/ ${b.limit} €</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${over ? 'bg-red-500' : pct > 80 ? 'bg-yellow-500' : 'bg-indigo-500'}" style="width:${pct}%"></div>
+          </div>
+          <p class="text-slate-500 text-xs mt-2">${pct}% utilisé · ${over ? `<span class='text-red-400'>+${b.spent - b.limit} € dépassé</span>` : `${b.limit - b.spent} € restant`}</p>
+        </div>`;
+      }).join('');
+    }
+
+    function renderExpenseList(data) {
+      document.getElementById('expense-list').innerHTML = data.map(e => {
+        const c = catColors[e.cat] || catColors['Autre'];
+        return `
+        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 transition-all">
+          <div class="w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center text-lg">${c.icon}</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-white text-sm font-medium">${e.desc}</p>
+            <p class="text-slate-500 text-xs">${e.cat} · ${new Date(e.date).toLocaleDateString('fr-FR')}</p>
+          </div>
+          <span class="text-red-400 font-semibold text-sm">-${e.amount} €</span>
+        </div>`;
+      }).join('');
+    }
+
+    function filterExpenses(q) {
+      renderExpenseList(expenses.filter(e => e.desc.toLowerCase().includes(q.toLowerCase()) || e.cat.toLowerCase().includes(q.toLowerCase())));
+    }
+
+    let barChart, pieChart;
+    function renderCharts() {
+      const labels = budgets.map(b => b.cat);
+      const spent = budgets.map(b => b.spent);
+      const limits = budgets.map(b => b.limit);
+      const colors = budgets.map(b => (catColors[b.cat] || catColors['Autre']).bar);
+
+      if (barChart) barChart.destroy();
+      barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Dépensé', data: spent, backgroundColor: colors, borderRadius: 6 },
+            { label: 'Budget', data: limits, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { x: { ticks: { color: '#64748b' }, grid: { display: false } }, y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } } } }
+      });
+
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: spent, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+        options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } } } }
+      });
+    }
+
+    function renderAll() { renderBudgetCards(); renderExpenseList(expenses); renderCharts(); }
+
+    function openBudgetModal() { document.getElementById('budget-modal').classList.remove('hidden'); }
+    function closeBudgetModal() { document.getElementById('budget-modal').classList.add('hidden'); }
+
+    function saveBudget(e) {
+      e.preventDefault();
+      const cat = document.getElementById('b-cat').value;
+      const limit = parseFloat(document.getElementById('b-limit').value);
+      const existing = budgets.findIndex(b => b.cat === cat);
+      if (existing >= 0) budgets[existing].limit = limit;
+      else budgets.push({ cat, limit, spent: 0 });
+      renderAll();
+      closeBudgetModal();
+    }
+
+    function deleteBudget(i) { budgets.splice(i, 1); renderAll(); }
+
+    renderAll();
+  </script>
+</body>
+</html>

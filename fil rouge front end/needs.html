@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Besoins – Personal Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
+    .input-field { background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 12px; padding: 10px 16px; font-size: 14px; width: 100%; transition: all 0.2s; }
+    .input-field:focus { outline: none; border-color: #6366f1; }
+    .input-field option { background: #1e293b; }
+    .item-row { transition: all 0.2s; }
+    .item-row:hover { background: rgba(255,255,255,0.03); }
+    .item-checked { opacity: 0.5; }
+    .item-checked .item-name { text-decoration: line-through; color: #64748b; }
+    .priority-high { border-left: 3px solid #ef4444; }
+    .priority-medium { border-left: 3px solid #eab308; }
+    .priority-low { border-left: 3px solid #22c55e; }
+    .list-tab { transition: all 0.2s; cursor: pointer; }
+    .list-tab.active { background: #6366f1; color: white; }
+    .list-tab:not(.active) { color: #64748b; }
+    .list-tab:not(.active):hover { background: #334155; color: #f1f5f9; }
+    .drag-over { border: 2px dashed #6366f1 !important; background: rgba(99,102,241,0.05) !important; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="lg:ml-64 p-6 min-h-screen">
+    <div class="mt-8 lg:mt-0 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Besoins & Courses</h1>
+        <p class="text-slate-400 text-sm mt-1">Gérez vos listes de courses et achats planifiés</p>
+      </div>
+      <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Ajouter un article
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold text-white" id="kpi-total">0</p>
+        <p class="text-slate-400 text-xs mt-1">Total articles</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold text-green-400" id="kpi-done">0</p>
+        <p class="text-slate-400 text-xs mt-1">Achetés</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold text-yellow-400" id="kpi-pending">0</p>
+        <p class="text-slate-400 text-xs mt-1">En attente</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold text-indigo-400" id="kpi-budget">0 €</p>
+        <p class="text-slate-400 text-xs mt-1">Budget estimé</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+      <!-- Lists Sidebar -->
+      <div class="xl:col-span-1">
+        <div class="card p-4 mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-white font-semibold text-sm">Mes Listes</h2>
+            <button onclick="addList()" class="text-indigo-400 hover:text-indigo-300 text-xs">+ Nouvelle</button>
+          </div>
+          <div class="space-y-1" id="lists-nav"></div>
+        </div>
+
+        <!-- Budget Summary -->
+        <div class="card p-4">
+          <h2 class="text-white font-semibold text-sm mb-3">Budget par Catégorie</h2>
+          <div class="space-y-2" id="cat-budget"></div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="xl:col-span-3">
+        <!-- Filters -->
+        <div class="card p-4 mb-4">
+          <div class="flex flex-wrap gap-3">
+            <input type="text" placeholder="🔍 Rechercher un article..." oninput="renderItems()" id="search" class="input-field flex-1 min-w-40"/>
+            <select onchange="renderItems()" id="filter-priority" class="input-field w-auto">
+              <option value="">Toutes priorités</option>
+              <option value="Haute">Haute</option>
+              <option value="Moyenne">Moyenne</option>
+              <option value="Basse">Basse</option>
+            </select>
+            <select onchange="renderItems()" id="filter-cat" class="input-field w-auto">
+              <option value="">Toutes catégories</option>
+              <option>Alimentation</option>
+              <option>Hygiène</option>
+              <option>Maison</option>
+              <option>Électronique</option>
+              <option>Vêtements</option>
+              <option>Autre</option>
+            </select>
+            <button onclick="clearChecked()" class="px-4 py-2 rounded-xl bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white text-sm transition-all">
+              Effacer achetés
+            </button>
+          </div>
+        </div>
+
+        <!-- Items List -->
+        <div class="card overflow-hidden">
+          <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <h2 class="text-white font-semibold" id="list-title">Courses Semaine</h2>
+            <div class="flex items-center gap-3">
+              <span class="text-slate-500 text-xs" id="items-count">0 articles</span>
+              <button onclick="checkAll()" class="text-indigo-400 hover:text-indigo-300 text-xs">Tout cocher</button>
+            </div>
+          </div>
+
+          <!-- Quick Add -->
+          <div class="p-4 border-b border-slate-700">
+            <div class="flex gap-2">
+              <input type="text" id="quick-add" placeholder="Ajouter rapidement un article..." class="input-field flex-1" onkeydown="if(event.key==='Enter') quickAdd()"/>
+              <button onclick="quickAdd()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-all whitespace-nowrap">Ajouter</button>
+            </div>
+          </div>
+
+          <div id="items-list" class="divide-y divide-slate-800 min-h-32"></div>
+
+          <!-- Total -->
+          <div class="p-4 border-t border-slate-700 flex items-center justify-between">
+            <span class="text-slate-400 text-sm">Total estimé</span>
+            <span class="text-white font-bold text-lg" id="total-price">0 €</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Item Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-white font-semibold text-lg" id="modal-title">Nouvel Article</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form onsubmit="saveItem(event)" class="space-y-4">
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Nom de l'article</label>
+          <input type="text" id="i-name" placeholder="Ex: Lait demi-écrémé" class="input-field" required/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Quantité</label>
+            <input type="number" id="i-qty" placeholder="1" min="1" value="1" class="input-field"/>
+          </div>
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Prix estimé (€)</label>
+            <input type="number" id="i-price" placeholder="0.00" step="0.01" min="0" class="input-field"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Catégorie</label>
+            <select id="i-cat" class="input-field">
+              <option>Alimentation</option>
+              <option>Hygiène</option>
+              <option>Maison</option>
+              <option>Électronique</option>
+              <option>Vêtements</option>
+              <option>Autre</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-1.5">Priorité</label>
+            <select id="i-priority" class="input-field">
+              <option value="Haute">🔴 Haute</option>
+              <option value="Moyenne" selected>🟡 Moyenne</option>
+              <option value="Basse">🟢 Basse</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-1.5">Note (optionnel)</label>
+          <input type="text" id="i-note" placeholder="Ex: Marque préférée, magasin..." class="input-field"/>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script>
+    document.getElementById('nav-container').innerHTML = renderNav('needs');
+
+    const catIcons = { Alimentation:'🛒', Hygiène:'🧴', Maison:'🏠', Électronique:'💻', Vêtements:'👕', Autre:'📦' };
+    const priorityColors = { Haute: 'text-red-400', Moyenne: 'text-yellow-400', Basse: 'text-green-400' };
+    const priorityBorder = { Haute: 'priority-high', Moyenne: 'priority-medium', Basse: 'priority-low' };
+
+    let lists = [
+      { id: 1, name: 'Courses Semaine', icon: '🛒' },
+      { id: 2, name: 'Électroménager', icon: '🏠' },
+      { id: 3, name: 'Cadeaux', icon: '🎁' },
+    ];
+    let activeList = 1;
+
+    let items = [
+      { id:1, listId:1, name:'Lait demi-écrémé', qty:2, price:1.5, cat:'Alimentation', priority:'Haute', note:'Bio si possible', checked:false },
+      { id:2, listId:1, name:'Pain complet', qty:1, price:2.2, cat:'Alimentation', priority:'Haute', note:'', checked:false },
+      { id:3, listId:1, name:'Shampoing', qty:1, price:4.5, cat:'Hygiène', priority:'Moyenne', note:'', checked:true },
+      { id:4, listId:1, name:'Détergent lessive', qty:1, price:8.9, cat:'Maison', priority:'Moyenne', note:'Grande taille', checked:false },
+      { id:5, listId:1, name:'Yaourts nature', qty:4, price:3.2, cat:'Alimentation', priority:'Basse', note:'', checked:false },
+      { id:6, listId:1, name:'Café moulu', qty:1, price:5.5, cat:'Alimentation', priority:'Haute', note:'Arabica', checked:false },
+      { id:7, listId:2, name:'Aspirateur robot', qty:1, price:299, cat:'Électronique', priority:'Basse', note:'Comparer les prix', checked:false },
+      { id:8, listId:2, name:'Ampoules LED', qty:6, price:12, cat:'Maison', priority:'Moyenne', note:'E27 9W', checked:false },
+      { id:9, listId:3, name:'Livre cuisine', qty:1, price:25, cat:'Autre', priority:'Moyenne', note:'Pour maman', checked:false },
+    ];
+
+    let editId = null;
+
+    function renderLists() {
+      document.getElementById('lists-nav').innerHTML = lists.map(l => `
+        <div onclick="setActiveList(${l.id})" class="list-tab flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${activeList === l.id ? 'active' : ''}">
+          <span>${l.icon}</span>
+          <span class="flex-1">${l.name}</span>
+          <span class="text-xs opacity-60">${items.filter(i => i.listId === l.id && !i.checked).length}</span>
+        </div>`).join('');
+    }
+
+    function setActiveList(id) {
+      activeList = id;
+      const list = lists.find(l => l.id === id);
+      document.getElementById('list-title').textContent = list ? list.name : '';
+      renderLists();
+      renderItems();
+    }
+
+    function renderItems() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const fp = document.getElementById('filter-priority').value;
+      const fc = document.getElementById('filter-cat').value;
+
+      let filtered = items.filter(i =>
+        i.listId === activeList &&
+        (!q || i.name.toLowerCase().includes(q) || i.cat.toLowerCase().includes(q)) &&
+        (!fp || i.priority === fp) &&
+        (!fc || i.cat === fc)
+      );
+
+      // Sort: unchecked first, then by priority
+      const pOrder = { Haute: 0, Moyenne: 1, Basse: 2 };
+      filtered.sort((a, b) => a.checked - b.checked || pOrder[a.priority] - pOrder[b.priority]);
+
+      const total = filtered.filter(i => !i.checked).reduce((s, i) => s + (i.price * i.qty), 0);
+      document.getElementById('total-price').textContent = total.toFixed(2) + ' €';
+      document.getElementById('items-count').textContent = `${filtered.length} article${filtered.length > 1 ? 's' : ''}`;
+
+      // KPI
+      const allItems = items.filter(i => i.listId === activeList);
+      document.getElementById('kpi-total').textContent = allItems.length;
+      document.getElementById('kpi-done').textContent = allItems.filter(i => i.checked).length;
+      document.getElementById('kpi-pending').textContent = allItems.filter(i => !i.checked).length;
+      document.getElementById('kpi-budget').textContent = allItems.filter(i => !i.checked).reduce((s, i) => s + i.price * i.qty, 0).toFixed(0) + ' €';
+
+      document.getElementById('items-list').innerHTML = filtered.length ? filtered.map(item => `
+        <div class="item-row p-4 flex items-center gap-3 ${priorityBorder[item.priority]} ${item.checked ? 'item-checked' : ''}" id="item-${item.id}">
+          <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItem(${item.id})"
+            class="w-5 h-5 rounded accent-indigo-500 cursor-pointer flex-shrink-0"/>
+          <div class="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center text-lg flex-shrink-0">
+            ${catIcons[item.cat] || '📦'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <p class="item-name text-white text-sm font-medium">${item.name}</p>
+              <span class="text-xs ${priorityColors[item.priority]} opacity-80">${item.priority === 'Haute' ? '🔴' : item.priority === 'Moyenne' ? '🟡' : '🟢'}</span>
+            </div>
+            <div class="flex items-center gap-3 mt-0.5">
+              <span class="text-slate-500 text-xs">${item.cat}</span>
+              ${item.note ? `<span class="text-slate-600 text-xs">· ${item.note}</span>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="flex items-center gap-1">
+              <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded-lg bg-slate-700 text-slate-400 hover:bg-slate-600 flex items-center justify-center text-sm">−</button>
+              <span class="text-white text-sm w-6 text-center">${item.qty}</span>
+              <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded-lg bg-slate-700 text-slate-400 hover:bg-slate-600 flex items-center justify-center text-sm">+</button>
+            </div>
+            <span class="text-white font-semibold text-sm w-16 text-right">${(item.price * item.qty).toFixed(2)} €</span>
+            <div class="flex gap-1">
+              <button onclick="editItem(${item.id})" class="p-1.5 rounded-lg bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+              <button onclick="deleteItem(${item.id})" class="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`).join('') : '<div class="p-8 text-center text-slate-500 text-sm">Aucun article dans cette liste</div>';
+
+      renderCatBudget();
+    }
+
+    function renderCatBudget() {
+      const listItems = items.filter(i => i.listId === activeList && !i.checked);
+      const bycat = {};
+      listItems.forEach(i => { bycat[i.cat] = (bycat[i.cat] || 0) + i.price * i.qty; });
+      document.getElementById('cat-budget').innerHTML = Object.entries(bycat).map(([cat, total]) => `
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5">
+            <span>${catIcons[cat] || '📦'}</span>
+            <span class="text-slate-400">${cat}</span>
+          </div>
+          <span class="text-white font-medium">${total.toFixed(2)} €</span>
+        </div>`).join('') || '<p class="text-slate-600 text-xs">Aucun article</p>';
+    }
+
+    function toggleItem(id) {
+      const item = items.find(i => i.id === id);
+      if (item) item.checked = !item.checked;
+      renderItems();
+    }
+
+    function changeQty(id, delta) {
+      const item = items.find(i => i.id === id);
+      if (item) item.qty = Math.max(1, item.qty + delta);
+      renderItems();
+    }
+
+    function checkAll() {
+      items.filter(i => i.listId === activeList).forEach(i => i.checked = true);
+      renderItems();
+    }
+
+    function clearChecked() {
+      items = items.filter(i => !(i.listId === activeList && i.checked));
+      renderItems();
+    }
+
+    function quickAdd() {
+      const name = document.getElementById('quick-add').value.trim();
+      if (!name) return;
+      items.push({ id: Date.now(), listId: activeList, name, qty: 1, price: 0, cat: 'Alimentation', priority: 'Moyenne', note: '', checked: false });
+      document.getElementById('quick-add').value = '';
+      renderItems();
+    }
+
+    function addList() {
+      const name = prompt('Nom de la nouvelle liste:');
+      if (name) {
+        const icons = ['📋','🛍️','🎁','🏠','💊','🎓'];
+        lists.push({ id: Date.now(), name, icon: icons[Math.floor(Math.random() * icons.length)] });
+        renderLists();
+      }
+    }
+
+    function openModal() {
+      editId = null;
+      document.getElementById('modal-title').textContent = 'Nouvel Article';
+      document.getElementById('i-name').value = '';
+      document.getElementById('i-qty').value = '1';
+      document.getElementById('i-price').value = '';
+      document.getElementById('i-cat').value = 'Alimentation';
+      document.getElementById('i-priority').value = 'Moyenne';
+      document.getElementById('i-note').value = '';
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function editItem(id) {
+      const item = items.find(i => i.id === id);
+      editId = id;
+      document.getElementById('modal-title').textContent = 'Modifier l\'Article';
+      document.getElementById('i-name').value = item.name;
+      document.getElementById('i-qty').value = item.qty;
+      document.getElementById('i-price').value = item.price;
+      document.getElementById('i-cat').value = item.cat;
+      document.getElementById('i-priority').value = item.priority;
+      document.getElementById('i-note').value = item.note;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function deleteItem(id) {
+      items = items.filter(i => i.id !== id);
+      renderItems();
+    }
+
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    function saveItem(e) {
+      e.preventDefault();
+      const data = {
+        id: editId || Date.now(),
+        listId: activeList,
+        name: document.getElementById('i-name').value,
+        qty: parseInt(document.getElementById('i-qty').value) || 1,
+        price: parseFloat(document.getElementById('i-price').value) || 0,
+        cat: document.getElementById('i-cat').value,
+        priority: document.getElementById('i-priority').value,
+        note: document.getElementById('i-note').value,
+        checked: false,
+      };
+      if (editId) {
+        const idx = items.findIndex(i => i.id === editId);
+        data.checked = items[idx].checked;
+        items[idx] = data;
+      } else {
+        items.push(data);
+      }
+      renderItems();
+      closeModal();
+    }
+
+    // Init
+    renderLists();
+    setActiveList(1);
+  </script>
+</body>
+</html>

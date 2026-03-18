@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Manager – Connexion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+    .input-field { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: #f1f5f9; transition: all 0.3s; }
+    .input-field:focus { outline: none; border-color: #6366f1; background: rgba(99,102,241,0.1); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .input-field::placeholder { color: #64748b; }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); transition: all 0.3s; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(99,102,241,0.4); }
+    .tab-active { border-bottom: 2px solid #6366f1; color: #6366f1; }
+    .tab-inactive { color: #64748b; border-bottom: 2px solid transparent; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+
+  <div class="orb w-96 h-96 bg-indigo-500 top-[-100px] left-[-100px]"></div>
+  <div class="orb w-80 h-80 bg-purple-500 bottom-[-80px] right-[-80px]"></div>
+
+  <div class="glass rounded-2xl w-full max-w-md p-8 relative z-10">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white">Personal Manager</h1>
+      <p class="text-slate-400 text-sm mt-1">Gérez vos finances en toute sérénité</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex mb-8 border-b border-slate-700">
+      <button id="tab-login" onclick="switchTab('login')" class="flex-1 pb-3 text-sm font-medium tab-active transition-all">Connexion</button>
+      <button id="tab-register" onclick="switchTab('register')" class="flex-1 pb-3 text-sm font-medium tab-inactive transition-all">Inscription</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="form-login" onsubmit="handleLogin(event)">
+      <div class="space-y-4">
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-2">Email</label>
+          <input type="email" placeholder="vous@exemple.com" class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-2">Mot de passe</label>
+          <div class="relative">
+            <input id="login-pwd" type="password" placeholder="••••••••" class="input-field w-full rounded-xl px-4 py-3 text-sm pr-12"/>
+            <button type="button" onclick="togglePwd('login-pwd')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <div class="text-right mt-2">
+            <a href="#" class="text-indigo-400 text-xs hover:text-indigo-300">Mot de passe oublié ?</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="remember" class="rounded accent-indigo-500"/>
+          <label for="remember" class="text-slate-400 text-sm">Se souvenir de moi</label>
+        </div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm mt-2">
+          Se connecter
+        </button>
+      </div>
+    </form>
+
+    <!-- Register Form -->
+    <form id="form-register" class="hidden" onsubmit="handleRegister(event)">
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-2">Prénom</label>
+            <input type="text" placeholder="Jean" class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+          </div>
+          <div>
+            <label class="text-slate-300 text-sm font-medium block mb-2">Nom</label>
+            <input type="text" placeholder="Dupont" class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-2">Email</label>
+          <input type="email" placeholder="vous@exemple.com" class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-2">Mot de passe</label>
+          <div class="relative">
+            <input id="reg-pwd" type="password" placeholder="Min. 8 caractères" class="input-field w-full rounded-xl px-4 py-3 text-sm pr-12"/>
+            <button type="button" onclick="togglePwd('reg-pwd')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <!-- Password strength -->
+          <div class="mt-2 flex gap-1">
+            <div id="s1" class="h-1 flex-1 rounded bg-slate-700"></div>
+            <div id="s2" class="h-1 flex-1 rounded bg-slate-700"></div>
+            <div id="s3" class="h-1 flex-1 rounded bg-slate-700"></div>
+            <div id="s4" class="h-1 flex-1 rounded bg-slate-700"></div>
+          </div>
+        </div>
+        <div>
+          <label class="text-slate-300 text-sm font-medium block mb-2">Confirmer le mot de passe</label>
+          <input type="password" placeholder="••••••••" class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+        </div>
+        <div class="flex items-start gap-2">
+          <input type="checkbox" id="terms" class="rounded accent-indigo-500 mt-0.5"/>
+          <label for="terms" class="text-slate-400 text-xs">J'accepte les <a href="#" class="text-indigo-400 hover:underline">conditions d'utilisation</a> et la <a href="#" class="text-indigo-400 hover:underline">politique de confidentialité</a></label>
+        </div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm">
+          Créer mon compte
+        </button>
+      </div>
+    </form>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden mt-4 p-3 rounded-xl text-sm text-center font-medium"></div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+      document.getElementById('form-register').classList.toggle('hidden', isLogin);
+      document.getElementById('tab-login').className = `flex-1 pb-3 text-sm font-medium transition-all ${isLogin ? 'tab-active' : 'tab-inactive'}`;
+      document.getElementById('tab-register').className = `flex-1 pb-3 text-sm font-medium transition-all ${!isLogin ? 'tab-active' : 'tab-inactive'}`;
+    }
+
+    function togglePwd(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    document.getElementById('reg-pwd').addEventListener('input', function() {
+      const v = this.value, len = v.length;
+      const colors = ['bg-red-500','bg-orange-500','bg-yellow-500','bg-green-500'];
+      const score = Math.min(Math.floor(len / 3), 4);
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('s' + i);
+        el.className = `h-1 flex-1 rounded ${i <= score ? colors[score-1] : 'bg-slate-700'}`;
+      }
+    });
+
+    function showToast(msg, success = true) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `mt-4 p-3 rounded-xl text-sm text-center font-medium ${success ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`;
+      setTimeout(() => t.className = 'hidden mt-4 p-3 rounded-xl text-sm text-center font-medium', 3000);
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      showToast('Connexion réussie ! Redirection...', true);
+      setTimeout(() => window.location.href = 'dashboard-user.html', 1500);
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      showToast('Compte créé avec succès !', true);
+      setTimeout(() => switchTab('login'), 1500);
+    }
+  </script>
+</body>
+</html>

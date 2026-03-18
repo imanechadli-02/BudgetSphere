@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard – Personal Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f1f5f9; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
+    .badge { padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .badge-active { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-inactive { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .badge-admin { background: rgba(99,102,241,0.15); color: #6366f1; }
+    .badge-user { background: rgba(148,163,184,0.15); color: #94a3b8; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+  </style>
+</head>
+<body>
+  <!-- Admin Sidebar -->
+  <aside class="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-40">
+    <div class="p-6 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-white font-semibold text-sm">Admin Panel</p>
+          <p class="text-slate-500 text-xs">Personal Manager</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-red-600 text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Vue d'ensemble
+      </a>
+      <a href="#users-section" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Utilisateurs
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+        Catégories
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Statistiques
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Logs d'audit
+      </a>
+    </nav>
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-xl">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold">AD</div>
+        <div>
+          <p class="text-white text-sm font-medium">Admin</p>
+          <p class="text-slate-500 text-xs">admin@pm.com</p>
+        </div>
+      </div>
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-red-400 text-sm transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Déconnexion
+      </a>
+    </div>
+  </aside>
+
+  <main class="ml-64 p-6 min-h-screen">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Administration</h1>
+        <p class="text-slate-400 text-sm mt-1">Statistiques globales anonymisées</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-admin">ADMIN</span>
+        <span class="text-slate-400 text-sm" id="admin-date"></span>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-2">Utilisateurs Total</p>
+        <p class="text-3xl font-bold text-white">1 248</p>
+        <p class="text-green-400 text-xs mt-2">+24 ce mois</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-2">Comptes Actifs</p>
+        <p class="text-3xl font-bold text-green-400">1 187</p>
+        <p class="text-slate-500 text-xs mt-2">95.1% du total</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-2">Comptes Inactifs</p>
+        <p class="text-3xl font-bold text-red-400">61</p>
+        <p class="text-slate-500 text-xs mt-2">4.9% du total</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-slate-400 text-sm mb-2">Transactions / Jour</p>
+        <p class="text-3xl font-bold text-indigo-400">3 420</p>
+        <p class="text-green-400 text-xs mt-2">+8.3% vs hier</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="text-white font-semibold mb-4">Inscriptions Mensuelles</h2>
+        <canvas id="adminBarChart" height="120"></canvas>
+      </div>
+      <div class="card p-5">
+        <h2 class="text-white font-semibold mb-4">Répartition Rôles</h2>
+        <canvas id="roleChart" height="180"></canvas>
+        <div class="mt-4 space-y-2">
+          <div class="flex justify-between text-xs"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span><span class="text-slate-400">Utilisateurs</span></div><span class="text-white">1 235</span></div>
+          <div class="flex justify-between text-xs"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span><span class="text-slate-400">Admins</span></div><span class="text-white">13</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card p-5" id="users-section">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-white font-semibold">Gestion des Utilisateurs</h2>
+        <div class="flex items-center gap-3">
+          <input type="text" placeholder="Rechercher..." oninput="filterUsers(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 w-48"/>
+          <select onchange="filterByStatus(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+            <option value="">Tous</option>
+            <option value="Actif">Actifs</option>
+            <option value="Inactif">Inactifs</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-700">
+              <th class="text-left text-slate-400 font-medium pb-3 pr-4">Utilisateur</th>
+              <th class="text-left text-slate-400 font-medium pb-3 pr-4">Email</th>
+              <th class="text-left text-slate-400 font-medium pb-3 pr-4">Rôle</th>
+              <th class="text-left text-slate-400 font-medium pb-3 pr-4">Statut</th>
+              <th class="text-left text-slate-400 font-medium pb-3 pr-4">Inscription</th>
+              <th class="text-left text-slate-400 font-medium pb-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-table"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-700">
+        <p class="text-slate-500 text-xs" id="table-info">Affichage 1-8 sur 1248</p>
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs hover:bg-slate-700">Précédent</button>
+          <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs">1</button>
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs hover:bg-slate-700">2</button>
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs hover:bg-slate-700">Suivant</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Confirm -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-80">
+      <h3 class="text-white font-semibold mb-2" id="modal-title">Confirmer l'action</h3>
+      <p class="text-slate-400 text-sm mb-6" id="modal-msg">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+      <div class="flex gap-3">
+        <button onclick="closeModal()" class="flex-1 py-2 rounded-xl bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">Annuler</button>
+        <button onclick="confirmAction()" class="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700" id="modal-confirm">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('admin-date').textContent = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const users = [
+      { name: 'Marie Martin', email: 'marie@ex.com', role: 'USER', status: 'Actif', date: '15 Jan 2024' },
+      { name: 'Pierre Durand', email: 'pierre@ex.com', role: 'USER', status: 'Actif', date: '12 Jan 2024' },
+      { name: 'Sophie Bernard', email: 'sophie@ex.com', role: 'ADMIN', status: 'Actif', date: '10 Jan 2024' },
+      { name: 'Lucas Petit', email: 'lucas@ex.com', role: 'USER', status: 'Inactif', date: '08 Jan 2024' },
+      { name: 'Emma Leroy', email: 'emma@ex.com', role: 'USER', status: 'Actif', date: '05 Jan 2024' },
+      { name: 'Thomas Moreau', email: 'thomas@ex.com', role: 'USER', status: 'Actif', date: '03 Jan 2024' },
+      { name: 'Camille Simon', email: 'camille@ex.com', role: 'USER', status: 'Inactif', date: '01 Jan 2024' },
+      { name: 'Antoine Laurent', email: 'antoine@ex.com', role: 'ADMIN', status: 'Actif', date: '28 Déc 2023' },
+    ];
+
+    let currentAction = null;
+    function renderUsers(data) {
+      document.getElementById('users-table').innerHTML = data.map((u, i) => `
+        <tr class="border-b border-slate-800 cursor-pointer">
+          <td class="py-3 pr-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">${u.name.split(' ').map(n=>n[0]).join('')}</div>
+              <span class="text-white font-medium">${u.name}</span>
+            </div>
+          </td>
+          <td class="py-3 pr-4 text-slate-400">${u.email}</td>
+          <td class="py-3 pr-4"><span class="badge ${u.role==='ADMIN'?'badge-admin':'badge-user'}">${u.role}</span></td>
+          <td class="py-3 pr-4"><span class="badge ${u.status==='Actif'?'badge-active':'badge-inactive'}">${u.status}</span></td>
+          <td class="py-3 pr-4 text-slate-400">${u.date}</td>
+          <td class="py-3">
+            <div class="flex gap-2">
+              <button onclick="openModal('toggle', ${i})" class="px-3 py-1 rounded-lg text-xs font-medium ${u.status==='Actif'?'bg-red-500/20 text-red-400 hover:bg-red-500/30':'bg-green-500/20 text-green-400 hover:bg-green-500/30'} transition-all">
+                ${u.status==='Actif'?'Désactiver':'Activer'}
+              </button>
+              <button onclick="openModal('delete', ${i})" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-700 text-slate-400 hover:bg-slate-600 transition-all">Supprimer</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+    renderUsers(users);
+
+    function filterUsers(q) { renderUsers(users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()))); }
+    function filterByStatus(s) { renderUsers(s ? users.filter(u => u.status === s) : users); }
+
+    function openModal(action, idx) {
+      currentAction = { action, idx };
+      document.getElementById('modal-title').textContent = action === 'delete' ? 'Supprimer l\'utilisateur' : 'Modifier le statut';
+      document.getElementById('modal-msg').textContent = action === 'delete' ? `Supprimer définitivement ${users[idx].name} ?` : `${users[idx].status==='Actif'?'Désactiver':'Activer'} le compte de ${users[idx].name} ?`;
+      document.getElementById('modal-confirm').className = `flex-1 py-2 rounded-xl text-white text-sm ${action==='delete'?'bg-red-600 hover:bg-red-700':'bg-indigo-600 hover:bg-indigo-700'}`;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); currentAction = null; }
+    function confirmAction() {
+      if (currentAction?.action === 'toggle') {
+        users[currentAction.idx].status = users[currentAction.idx].status === 'Actif' ? 'Inactif' : 'Actif';
+        renderUsers(users);
+      } else if (currentAction?.action === 'delete') {
+        users.splice(currentAction.idx, 1);
+        renderUsers(users);
+      }
+      closeModal();
+    }
+
+    // Bar Chart
+    new Chart(document.getElementById('adminBarChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Fév','Mar','Avr','Mai','Jun','Jul','Août','Sep','Oct','Nov','Déc','Jan'],
+        datasets: [{ label: 'Inscriptions', data: [45,62,58,80,95,110,88,102,120,98,135,124], backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#64748b' }, grid: { display: false } }, y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } } } }
+    });
+
+    // Role Donut
+    new Chart(document.getElementById('roleChart').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: ['Utilisateurs','Admins'], datasets: [{ data: [1235,13], backgroundColor: ['#6366f1','#ef4444'], borderWidth: 0 }] },
+      options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+    });
+  </script>
+</body>
+</html>
