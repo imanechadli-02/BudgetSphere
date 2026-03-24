@@ -37,6 +37,29 @@ export interface SavingGoal {
   userId: number;
 }
 
+export interface VariableExpense {
+  id: number;
+  title: string;
+  amount: number;
+  description: string;
+  expenseDate: string;
+  endDate: string;
+  category: string;
+  userId: number;
+}
+
+export interface FixedExpense {
+  id: number;
+  title: string;
+  amount: number;
+  description: string;
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  startDate: string;
+  endDate: string;
+  category: string;
+  userId: number;
+}
+
 export interface Need {
   id: number;
   title: string;

@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: 'transactions', loadComponent: () => import('./features/transactions/transactions.component').then(m => m.TransactionsComponent), canActivate: [authGuard] },
   { path: 'register', loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
+  { path: 'expenses', loadComponent: () => import('./features/expenses/expenses.component').then(m => m.ExpensesComponent), canActivate: [authGuard] },
   { path: 'savings', loadComponent: () => import('./features/savings/savings.component').then(m => m.SavingsComponent), canActivate: [authGuard] },
   { path: 'needs', loadComponent: () => import('./features/needs/needs.component').then(m => m.NeedsComponent), canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' }

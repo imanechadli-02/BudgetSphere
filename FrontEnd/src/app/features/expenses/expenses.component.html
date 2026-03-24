@@ -1,0 +1,255 @@
+<div class="min-h-screen" style="background:#0f172a;color:#f1f5f9;font-family:'Inter',sans-serif">
+  <app-sidebar />
+  <main class="lg:ml-64 p-6 min-h-screen">
+
+    <!-- Header -->
+    <div class="mt-8 lg:mt-0 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold" style="color:#f1f5f9">Dépenses & Budgets</h1>
+        <p class="text-sm mt-1" style="color:#94a3b8">Suivez vos dépenses variables et fixes</p>
+      </div>
+      <button (click)="openModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nouvelle Dépense
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-sm mb-1" style="color:#94a3b8">Total Dépensé</p>
+        <p class="text-3xl font-bold" style="color:#f87171">{{ totalAll | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">variables + fixes</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-1" style="color:#94a3b8">Dépenses Variables</p>
+        <p class="text-3xl font-bold" style="color:#818cf8">{{ totalVariable | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">{{ variableExpenses.length }} entrée(s)</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-1" style="color:#94a3b8">Dépenses Fixes</p>
+        <p class="text-3xl font-bold" style="color:#facc15">{{ totalFixed | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">{{ fixedExpenses.length }} entrée(s)</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Dépenses par Catégorie</h2>
+        <div *ngIf="allExpenses.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune dépense</div>
+        <canvas *ngIf="allExpenses.length > 0" id="barChart" height="130"></canvas>
+      </div>
+      <div class="card p-5">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition</h2>
+        <div *ngIf="allExpenses.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune donnée</div>
+        <canvas *ngIf="allExpenses.length > 0" id="pieChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Budget par catégorie -->
+    <div class="mb-6" *ngIf="budgetByCategory.length > 0">
+      <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition par Catégorie</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div *ngFor="let entry of budgetByCategory" class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">{{ entry[1].icon }}</span>
+              <span class="font-medium text-sm" style="color:#f1f5f9">{{ entry[1].label }}</span>
+            </div>
+            <span class="font-bold text-sm" style="color:#f87171">{{ entry[1].spent | number:'1.0-0' }} €</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="totalAll > 0 ? (entry[1].spent / totalAll) * 100 : 0" [style.background]="entry[1].color"></div>
+          </div>
+          <p class="text-xs mt-2" style="color:#475569">
+            {{ totalAll > 0 ? ((entry[1].spent / totalAll) * 100 | number:'1.0-0') : 0 }}% du total
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs + Liste -->
+    <div class="card overflow-hidden">
+      <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid #334155">
+        <div class="flex gap-2">
+          <button class="tab-btn" [class.tab-active]="activeTab === 'variable'" [class.tab-inactive]="activeTab !== 'variable'" (click)="activeTab = 'variable'">
+            Variables ({{ variableExpenses.length }})
+          </button>
+          <button class="tab-btn" [class.tab-active]="activeTab === 'fixed'" [class.tab-inactive]="activeTab !== 'fixed'" (click)="activeTab = 'fixed'">
+            Fixes ({{ fixedExpenses.length }})
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <input [(ngModel)]="searchQuery" type="text" placeholder="🔍 Rechercher..." class="input-field" style="width:180px"/>
+          <select [(ngModel)]="filterCategory" class="input-field" style="width:auto">
+            <option value="">Toutes catégories</option>
+            <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Variable Expenses -->
+      <div *ngIf="activeTab === 'variable'">
+        <div *ngIf="loading" class="p-8 text-center text-sm" style="color:#64748b">Chargement...</div>
+        <div *ngIf="!loading && filteredVariable.length === 0" class="p-8 text-center text-sm" style="color:#64748b">Aucune dépense variable</div>
+        <div *ngFor="let e of filteredVariable" class="flex items-center gap-3 p-4 transition-all" style="border-bottom:1px solid #0f172a"
+          onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" [style.background]="getCatBg(e.category)">
+            {{ getCatIcon(e.category) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium" style="color:#f1f5f9">{{ e.title }}</p>
+            <p class="text-xs" style="color:#64748b">{{ getCatLabel(e.category) }} · {{ e.expenseDate | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <span *ngIf="e.description" class="text-xs hidden sm:block" style="color:#475569;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.description }}</span>
+          <span class="font-semibold text-sm flex-shrink-0" style="color:#f87171">-{{ e.amount | number:'1.0-2' }} €</span>
+          <div class="flex gap-1 flex-shrink-0">
+            <button (click)="editVar(e)" class="p-1.5 rounded-lg" style="background:#334155;color:#94a3b8">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button (click)="deleteVar(e.id)" class="p-1.5 rounded-lg" style="background:rgba(239,68,68,0.15);color:#f87171">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fixed Expenses -->
+      <div *ngIf="activeTab === 'fixed'">
+        <div *ngIf="loading" class="p-8 text-center text-sm" style="color:#64748b">Chargement...</div>
+        <div *ngIf="!loading && filteredFixed.length === 0" class="p-8 text-center text-sm" style="color:#64748b">Aucune dépense fixe</div>
+        <div *ngFor="let e of filteredFixed" class="flex items-center gap-3 p-4 transition-all" style="border-bottom:1px solid #0f172a"
+          onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" [style.background]="getCatBg(e.category)">
+            {{ getCatIcon(e.category) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium" style="color:#f1f5f9">{{ e.title }}</p>
+            <p class="text-xs" style="color:#64748b">{{ getCatLabel(e.category) }} · {{ e.startDate | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-lg flex-shrink-0" style="background:rgba(129,140,248,0.15);color:#818cf8">
+            {{ getFreqLabel(e.frequency) }}
+          </span>
+          <span class="font-semibold text-sm flex-shrink-0" style="color:#f87171">-{{ e.amount | number:'1.0-2' }} €</span>
+          <div class="flex gap-1 flex-shrink-0">
+            <button (click)="editFix(e)" class="p-1.5 rounded-lg" style="background:#334155;color:#94a3b8">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button (click)="deleteFix(e.id)" class="p-1.5 rounded-lg" style="background:rgba(239,68,68,0.15);color:#f87171">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 flex justify-between items-center" style="border-top:1px solid #334155">
+        <p class="text-xs" style="color:#64748b">
+          {{ activeTab === 'variable' ? filteredVariable.length : filteredFixed.length }} dépense(s)
+        </p>
+        <p class="text-sm font-semibold" style="color:#f87171">
+          Total : {{ activeTab === 'variable' ? (totalVariable | number:'1.0-0') : (totalFixed | number:'1.0-0') }} €
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
+  <div class="w-full max-w-md p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-lg" style="color:#f1f5f9">
+        {{ editId ? 'Modifier' : 'Nouvelle' }} dépense {{ activeTab === 'variable' ? 'variable' : 'fixe' }}
+      </h3>
+      <button (click)="closeModal()" style="color:#64748b">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Tabs dans modal -->
+    <div class="flex gap-2 mb-5" *ngIf="!editId">
+      <button class="tab-btn flex-1" [class.tab-active]="activeTab === 'variable'" [class.tab-inactive]="activeTab !== 'variable'" (click)="activeTab = 'variable'">Variable</button>
+      <button class="tab-btn flex-1" [class.tab-active]="activeTab === 'fixed'" [class.tab-inactive]="activeTab !== 'fixed'" (click)="activeTab = 'fixed'">Fixe</button>
+    </div>
+
+    <div *ngIf="formError" class="mb-4 p-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171">{{ formError }}</div>
+
+    <!-- Formulaire Variable -->
+    <form *ngIf="activeTab === 'variable'" (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Titre</label>
+        <input [(ngModel)]="varForm.title" name="title" type="text" placeholder="Ex: Courses Carrefour" class="input-field" required/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Montant (€)</label>
+          <input [(ngModel)]="varForm.amount" name="amount" type="number" placeholder="0.00" step="0.01" min="0" class="input-field" required/>
+        </div>
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Catégorie</label>
+          <select [(ngModel)]="varForm.category" name="category" class="input-field">
+            <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Date de la dépense</label>
+        <input [(ngModel)]="varForm.expenseDate" name="expenseDate" type="date" class="input-field" required/>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Description (optionnel)</label>
+        <input [(ngModel)]="varForm.description" name="description" type="text" placeholder="Note..." class="input-field"/>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="closeModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+        <button type="submit" [disabled]="saving" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+
+    <!-- Formulaire Fixe -->
+    <form *ngIf="activeTab === 'fixed'" (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Titre</label>
+        <input [(ngModel)]="fixForm.title" name="title" type="text" placeholder="Ex: Loyer" class="input-field" required/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Montant (€)</label>
+          <input [(ngModel)]="fixForm.amount" name="amount" type="number" placeholder="0.00" step="0.01" min="0" class="input-field" required/>
+        </div>
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Fréquence</label>
+          <select [(ngModel)]="fixForm.frequency" name="frequency" class="input-field">
+            <option *ngFor="let f of frequencies" [value]="f.value">{{ f.label }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Catégorie</label>
+          <select [(ngModel)]="fixForm.category" name="category" class="input-field">
+            <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Date de début</label>
+          <input [(ngModel)]="fixForm.startDate" name="startDate" type="date" class="input-field" required/>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Description (optionnel)</label>
+        <input [(ngModel)]="fixForm.description" name="description" type="text" placeholder="Note..." class="input-field"/>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="closeModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+        <button type="submit" [disabled]="saving" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
