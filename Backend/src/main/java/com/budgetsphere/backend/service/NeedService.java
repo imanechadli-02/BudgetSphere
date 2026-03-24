@@ -37,12 +37,12 @@ public class NeedService {
     }
 
     public Page<NeedDto> getAll(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "priority"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         return needRepository.findByUserId(getCurrentUser().getId(), pageable).map(needMapper::toDto);
     }
 
     public Page<NeedDto> getByStatus(NeedStatus status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "priority"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         return needRepository.findByUserIdAndStatus(getCurrentUser().getId(), status, pageable).map(needMapper::toDto);
     }
 

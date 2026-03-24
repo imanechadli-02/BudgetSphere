@@ -1,0 +1,198 @@
+<div class="min-h-screen" style="background:#0f172a;color:#f1f5f9;font-family:'Inter',sans-serif">
+  <app-sidebar />
+  <main class="lg:ml-64 p-6 min-h-screen">
+
+    <!-- Header -->
+    <div class="mt-8 lg:mt-0 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold" style="color:#f1f5f9">Besoins & Courses</h1>
+        <p class="text-sm mt-1" style="color:#94a3b8">Gérez vos listes de courses et achats planifiés</p>
+      </div>
+      <button (click)="openModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Ajouter un article
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold" style="color:#f1f5f9">{{ needs.length }}</p>
+        <p class="text-xs mt-1" style="color:#94a3b8">Total articles</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold" style="color:#4ade80">{{ countFulfilled }}</p>
+        <p class="text-xs mt-1" style="color:#94a3b8">Accomplis</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold" style="color:#facc15">{{ countPending }}</p>
+        <p class="text-xs mt-1" style="color:#94a3b8">En attente</p>
+      </div>
+      <div class="card p-4 text-center">
+        <p class="text-2xl font-bold" style="color:#818cf8">{{ totalEstimated | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#94a3b8">Budget estimé</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+
+      <!-- Budget par priorité -->
+      <div class="xl:col-span-1">
+        <div class="card p-4">
+          <h2 class="font-semibold text-sm mb-3" style="color:#f1f5f9">Budget par Priorité</h2>
+          <div class="space-y-2">
+            <div *ngFor="let p of priorities" class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" [style.background]="getPriorityColor(p.value)"></span>
+                <span style="color:#94a3b8">{{ p.label }}</span>
+              </div>
+              <span class="font-medium" style="color:#f1f5f9">
+                {{ getBudgetByPriority(p.value) | number:'1.0-0' }} €
+              </span>
+            </div>
+            <div *ngIf="needs.length === 0" class="text-xs" style="color:#475569">Aucun article</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="xl:col-span-3">
+
+        <!-- Filters -->
+        <div class="card p-4 mb-4">
+          <div class="flex flex-wrap gap-3">
+            <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" type="text"
+              placeholder="🔍 Rechercher un article..." class="input-field flex-1 min-w-40"/>
+            <select [(ngModel)]="filterPriority" (ngModelChange)="applyFilters()" class="input-field w-auto">
+              <option value="">Toutes priorités</option>
+              <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
+            </select>
+            <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()" class="input-field w-auto">
+              <option value="">Tous les statuts</option>
+              <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+            </select>
+            <button (click)="resetFilters()" class="px-4 py-2 rounded-xl text-sm transition-all" style="background:#334155;color:#94a3b8">
+              Réinitialiser
+            </button>
+          </div>
+        </div>
+
+        <!-- Items List -->
+        <div class="card overflow-hidden">
+          <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid #334155">
+            <h2 class="font-semibold" style="color:#f1f5f9">Mes Besoins</h2>
+            <span class="text-xs" style="color:#64748b">{{ filtered.length }} article{{ filtered.length > 1 ? 's' : '' }}</span>
+          </div>
+
+          <div style="min-height:128px">
+            <div *ngIf="loading" class="p-8 text-center text-sm" style="color:#64748b">Chargement...</div>
+            <div *ngIf="!loading && filtered.length === 0" class="p-8 text-center text-sm" style="color:#64748b">Aucun article trouvé</div>
+
+            <div *ngFor="let n of filtered"
+              class="item-row p-4 flex items-center gap-3"
+              [class.priority-high]="n.priority === 'HIGH'"
+              [class.priority-medium]="n.priority === 'MEDIUM'"
+              [class.priority-low]="n.priority === 'LOW'"
+              [class.item-fulfilled]="n.status === 'FULFILLED'"
+              style="border-bottom:1px solid #0f172a">
+
+              <!-- Status toggle -->
+              <button (click)="cycleStatus(n)" class="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
+                [style.border-color]="getStatusColor(n.status)"
+                [style.background]="n.status === 'FULFILLED' ? getStatusColor(n.status) : 'transparent'">
+                <svg *ngIf="n.status === 'FULFILLED'" class="w-3 h-3" fill="none" stroke="white" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium" [style.color]="n.status === 'FULFILLED' ? '#64748b' : '#f1f5f9'"
+                    [style.text-decoration]="n.status === 'FULFILLED' ? 'line-through' : 'none'">
+                    {{ n.title }}
+                  </p>
+                  <span class="text-xs px-1.5 py-0.5 rounded-md"
+                    [style.background]="getPriorityBg(n.priority)"
+                    [style.color]="getPriorityColor(n.priority)">
+                    {{ getPriorityLabel(n.priority) }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-xs px-1.5 py-0.5 rounded-md"
+                    [style.background]="getStatusBg(n.status)"
+                    [style.color]="getStatusColor(n.status)">
+                    {{ getStatusLabel(n.status) }}
+                  </span>
+                  <span class="text-xs" style="color:#475569">· Cliquer sur le cercle pour changer le statut</span>
+                </div>
+              </div>
+
+              <span class="font-semibold text-sm flex-shrink-0" style="color:#f1f5f9">
+                {{ n.estimatedPrice | number:'1.0-2' }} €
+              </span>
+
+              <div class="flex gap-1 flex-shrink-0">
+                <button (click)="editNeed(n)" class="p-1.5 rounded-lg" style="background:#334155;color:#94a3b8">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button (click)="deleteNeed(n.id)" class="p-1.5 rounded-lg" style="background:rgba(239,68,68,0.15);color:#f87171">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total -->
+          <div class="p-4 flex items-center justify-between" style="border-top:1px solid #334155">
+            <span class="text-sm" style="color:#94a3b8">Total estimé</span>
+            <span class="font-bold text-lg" style="color:#f1f5f9">{{ totalEstimated | number:'1.0-2' }} €</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
+  <div class="w-full max-w-md p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-lg" style="color:#f1f5f9">{{ editId ? 'Modifier' : 'Nouvel' }} Article</h3>
+      <button (click)="closeModal()" style="color:#64748b">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div *ngIf="formError" class="mb-4 p-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171">{{ formError }}</div>
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Nom de l'article</label>
+        <input [(ngModel)]="form.title" name="title" type="text" placeholder="Ex: Aspirateur robot" class="input-field" required/>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Prix estimé (€)</label>
+        <input [(ngModel)]="form.estimatedPrice" name="estimatedPrice" type="number" placeholder="0.00" step="0.01" min="0" class="input-field" required/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Priorité</label>
+          <select [(ngModel)]="form.priority" name="priority" class="input-field">
+            <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Statut</label>
+          <select [(ngModel)]="form.status" name="status" class="input-field">
+            <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="closeModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+        <button type="submit" [disabled]="saving" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

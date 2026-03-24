@@ -37,6 +37,15 @@ export interface SavingGoal {
   userId: number;
 }
 
+export interface Need {
+  id: number;
+  title: string;
+  estimatedPrice: number;
+  status: 'PENDING' | 'IN_PROGRESS' | 'FULFILLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  userId: number;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
