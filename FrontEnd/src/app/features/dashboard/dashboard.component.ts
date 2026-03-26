@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { TransactionService } from '../../core/services/transaction.service';
 import { SavingGoalService } from '../../core/services/saving-goal.service';
 import { Transaction, SavingGoal } from '../../core/models/models';
+import { forkJoin } from 'rxjs';
 
 declare var Chart: any;
 
@@ -158,16 +159,18 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private chartInstances: any[] = [];
 
   ngOnInit() {
-    this.transactionService.getAll(0, 5).subscribe(res => {
-      this.transactions = res.content;
-      this.totalIncome = res.content.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
-      this.totalExpense = res.content.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
-      this.balance = this.totalIncome - this.totalExpense;
-      this.buildCategoryData(res.content);
+    forkJoin({
+      stats: this.transactionService.getStats(),
+      recent: this.transactionService.getAll(0, 5),
+      goals: this.savingGoalService.getAll(0, 3)
+    }).subscribe(({ stats, recent, goals }) => {
+      this.totalIncome = stats.totalIncome;
+      this.totalExpense = stats.totalExpense;
+      this.balance = stats.balance;
+      this.transactions = recent.content;
+      this.savingGoals = goals.content;
+      this.buildCategoryData(recent.content);
       setTimeout(() => this.initCharts(), 0);
-    });
-    this.savingGoalService.getAll(0, 3).subscribe(res => {
-      this.savingGoals = res.content;
     });
   }
 

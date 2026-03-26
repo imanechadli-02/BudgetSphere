@@ -9,6 +9,10 @@ export class TransactionService {
 
   constructor(private http: HttpClient) {}
 
+  getStats(): Observable<{ totalIncome: number; totalExpense: number; balance: number; transactionCount: number }> {
+    return this.http.get<any>(`${this.apiUrl}/stats`);
+  }
+
   getAll(page = 0, size = 10, type?: string, category?: string): Observable<PageResponse<Transaction>> {
     let params = `page=${page}&size=${size}`;
     if (type) params += `&type=${type}`;

@@ -1,5 +1,6 @@
 package com.budgetsphere.backend.service;
 
+import com.budgetsphere.backend.dto.StatsDto;
 import com.budgetsphere.backend.dto.TransactionDto;
 import com.budgetsphere.backend.dto.TransactionRequest;
 import com.budgetsphere.backend.entity.Transaction;
@@ -72,5 +73,18 @@ public class TransactionService {
 
     public void delete(Long id) {
         transactionRepository.deleteById(id);
+    }
+
+    public StatsDto getStats() {
+        Long userId = getCurrentUser().getId();
+        java.math.BigDecimal income = transactionRepository.sumByUserIdAndType(userId, TransactionType.INCOME);
+        java.math.BigDecimal expense = transactionRepository.sumByUserIdAndType(userId, TransactionType.EXPENSE);
+        long count = transactionRepository.countByUserId(userId);
+        return StatsDto.builder()
+                .totalIncome(income)
+                .totalExpense(expense)
+                .balance(income.subtract(expense))
+                .transactionCount(count)
+                .build();
     }
 }

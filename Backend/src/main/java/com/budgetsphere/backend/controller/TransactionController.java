@@ -1,5 +1,6 @@
 package com.budgetsphere.backend.controller;
 
+import com.budgetsphere.backend.dto.StatsDto;
 import com.budgetsphere.backend.dto.TransactionDto;
 import com.budgetsphere.backend.dto.TransactionRequest;
 import com.budgetsphere.backend.entity.TransactionType;
@@ -23,6 +24,11 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionDto> create(@Valid @RequestBody TransactionRequest request) {
         return ResponseEntity.ok(transactionService.create(request));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<StatsDto> getStats() {
+        return ResponseEntity.ok(transactionService.getStats());
     }
 
     @GetMapping

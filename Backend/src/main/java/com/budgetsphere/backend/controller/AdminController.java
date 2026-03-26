@@ -22,6 +22,11 @@ public class AdminController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @PatchMapping("/users/{id}/toggle")
+    public ResponseEntity<UserDto> toggleUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.toggleUser(id));
+    }
+
     @PostMapping("/users")
     public ResponseEntity<UserDto> createAdmin(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(userService.createAdmin(request));

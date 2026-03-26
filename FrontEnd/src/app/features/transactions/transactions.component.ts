@@ -31,19 +31,16 @@ const CATEGORY_ICONS: Record<string, string> = {
 export class TransactionsComponent implements OnInit {
   private txService = inject(TransactionService);
 
-  transactions: Transaction[] = [];
-  filteredTransactions: Transaction[] = [];
   pagedTransactions: Transaction[] = [];
   loading = false;
   saving = false;
   showModal = false;
   editId: number | null = null;
   formError = '';
-  searchQuery = '';
   filterType = '';
-  filterCategory = '';
   currentPage = 1;
   totalPages = 1;
+  totalElements = 0;
   pages: number[] = [];
   readonly PAGE_SIZE = 8;
   totalIncome = 0;
@@ -53,42 +50,37 @@ export class TransactionsComponent implements OnInit {
   form = { description: '', amount: null as any, type: 'EXPENSE', category: 'FOOD', date: '', recurring: false };
   categories = Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }));
 
-  ngOnInit() { this.load(); }
+  ngOnInit() { this.loadStats(); this.loadPage(); }
 
-  load() {
+  loadStats() {
+    this.txService.getStats().subscribe(s => {
+      this.totalIncome = s.totalIncome;
+      this.totalExpense = s.totalExpense;
+      this.balance = s.balance;
+    });
+  }
+
+  load() { this.loadStats(); this.loadPage(); }
+
+  loadPage() {
     this.loading = true;
-    this.txService.getAll(0, 200).subscribe({
-      next: res => { this.transactions = res.content; this.applyFilters(); this.loading = false; },
+    this.txService.getAll(this.currentPage - 1, this.PAGE_SIZE, this.filterType || undefined).subscribe({
+      next: res => {
+        this.pagedTransactions = res.content;
+        this.totalElements = res.totalElements;
+        this.totalPages = res.totalPages || Math.ceil(res.totalElements / this.PAGE_SIZE) || 1;
+        this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
+        this.loading = false;
+      },
       error: () => { this.loading = false; }
     });
   }
 
-  applyFilters() {
-    let result = [...this.transactions];
-    if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
-      result = result.filter(t => t.description?.toLowerCase().includes(q) || CATEGORY_LABELS[t.category]?.toLowerCase().includes(q));
-    }
-    if (this.filterType) result = result.filter(t => t.type === this.filterType);
-    if (this.filterCategory) result = result.filter(t => t.category === this.filterCategory);
-    this.filteredTransactions = result;
-    this.totalIncome = result.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
-    this.totalExpense = result.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
-    this.balance = this.totalIncome - this.totalExpense;
-    this.currentPage = 1;
-    this.updatePagination();
-  }
+  applyFilters() { this.currentPage = 1; this.loadPage(); }
 
-  resetFilters() { this.searchQuery = ''; this.filterType = ''; this.filterCategory = ''; this.applyFilters(); }
+  resetFilters() { this.filterType = ''; this.applyFilters(); }
 
-  updatePagination() {
-    this.totalPages = Math.ceil(this.filteredTransactions.length / this.PAGE_SIZE) || 1;
-    this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
-    const start = (this.currentPage - 1) * this.PAGE_SIZE;
-    this.pagedTransactions = this.filteredTransactions.slice(start, start + this.PAGE_SIZE);
-  }
-
-  goPage(p: number) { this.currentPage = p; this.updatePagination(); }
+  goPage(p: number) { this.currentPage = p; this.loadPage(); }
 
   openModal() {
     this.editId = null; this.formError = '';

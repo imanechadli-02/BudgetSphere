@@ -1,0 +1,255 @@
+<div class="min-h-screen" style="background:#0f172a;color:#f1f5f9;font-family:'Inter',sans-serif;display:flex">
+
+  <!-- Admin Sidebar -->
+  <aside class="fixed left-0 top-0 h-full w-64 flex flex-col z-40" style="background:#0f172a;border-right:1px solid #1e293b">
+    <div class="p-6" style="border-bottom:1px solid #1e293b">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#dc2626">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-sm" style="color:#f1f5f9">Admin Panel</p>
+          <p class="text-xs" style="color:#64748b">BudgetSphere</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-1">
+      <div class="nav-link nav-active">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Vue d'ensemble
+      </div>
+      <a href="#users-section" class="nav-link">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Utilisateurs
+      </a>
+    </nav>
+
+    <div class="p-4" style="border-top:1px solid #1e293b">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-xl">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+             style="background:linear-gradient(135deg,#dc2626,#ea580c)">
+          {{ initials }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate" style="color:#f1f5f9">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</p>
+          <p class="text-xs truncate" style="color:#64748b">{{ currentUser?.email }}</p>
+        </div>
+      </div>
+      <button (click)="logout()" class="w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-sm transition-all" style="color:#64748b">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="ml-64 p-6 min-h-screen flex-1">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold" style="color:#f1f5f9">Administration</h1>
+        <p class="text-sm mt-1" style="color:#94a3b8">Gestion des utilisateurs et statistiques globales</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="px-3 py-1 rounded-full text-xs font-medium" style="background:rgba(99,102,241,0.15);color:#818cf8">ADMIN</span>
+        <span class="text-sm" style="color:#94a3b8">{{ currentDate }}</span>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-sm mb-2" style="color:#94a3b8">Utilisateurs Total</p>
+        <p class="text-3xl font-bold" style="color:#f1f5f9">{{ totalUsers }}</p>
+        <p class="text-xs mt-2" style="color:#64748b">comptes enregistrés</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-2" style="color:#94a3b8">Comptes Actifs</p>
+        <p class="text-3xl font-bold" style="color:#4ade80">{{ activeUsers }}</p>
+        <p class="text-xs mt-2" style="color:#64748b">{{ totalUsers > 0 ? ((activeUsers / totalUsers) * 100 | number:'1.0-0') : 0 }}% du total</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-2" style="color:#94a3b8">Comptes Inactifs</p>
+        <p class="text-3xl font-bold" style="color:#f87171">{{ inactiveUsers }}</p>
+        <p class="text-xs mt-2" style="color:#64748b">{{ totalUsers > 0 ? ((inactiveUsers / totalUsers) * 100 | number:'1.0-0') : 0 }}% du total</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-2" style="color:#94a3b8">Administrateurs</p>
+        <p class="text-3xl font-bold" style="color:#818cf8">{{ adminCount }}</p>
+        <p class="text-xs mt-2" style="color:#64748b">comptes admin</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Inscriptions Mensuelles</h2>
+        <canvas id="adminBarChart" height="120"></canvas>
+      </div>
+      <div class="card p-5">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition Rôles</h2>
+        <canvas id="roleChart" height="180"></canvas>
+        <div class="mt-4 space-y-2">
+          <div class="flex justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#6366f1"></span>
+              <span style="color:#94a3b8">Utilisateurs</span>
+            </div>
+            <span style="color:#f1f5f9">{{ totalUsers - adminCount }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#ef4444"></span>
+              <span style="color:#94a3b8">Admins</span>
+            </div>
+            <span style="color:#f1f5f9">{{ adminCount }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card p-5" id="users-section">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold" style="color:#f1f5f9">Gestion des Utilisateurs</h2>
+        <div class="flex items-center gap-3">
+          <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" type="text"
+            placeholder="🔍 Rechercher..." class="input-field" style="width:180px"/>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()" class="input-field" style="width:auto">
+            <option value="">Tous</option>
+            <option value="active">Actifs</option>
+            <option value="inactive">Inactifs</option>
+          </select>
+          <button (click)="resetFilters()" class="px-3 py-2 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Reset</button>
+          <button (click)="openCreateModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium" style="background:#dc2626;color:white">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouvel Admin
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom:1px solid #334155">
+              <th class="text-left pb-3 pr-4 font-medium" style="color:#94a3b8">Utilisateur</th>
+              <th class="text-left pb-3 pr-4 font-medium" style="color:#94a3b8">Email</th>
+              <th class="text-left pb-3 pr-4 font-medium" style="color:#94a3b8">Rôle</th>
+              <th class="text-left pb-3 pr-4 font-medium" style="color:#94a3b8">Statut</th>
+              <th class="text-left pb-3 font-medium" style="color:#94a3b8">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="5" class="py-8 text-center text-sm" style="color:#64748b">Chargement...</td>
+            </tr>
+            <tr *ngIf="!loading && filtered.length === 0">
+              <td colspan="5" class="py-8 text-center text-sm" style="color:#64748b">Aucun utilisateur trouvé</td>
+            </tr>
+            <tr *ngFor="let u of filtered" style="border-bottom:1px solid #0f172a">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                       style="background:linear-gradient(135deg,#6366f1,#a855f7)">
+                    {{ getInitials(u) }}
+                  </div>
+                  <span class="font-medium" style="color:#f1f5f9">{{ u.firstName }} {{ u.lastName }}</span>
+                </div>
+              </td>
+              <td class="py-3 pr-4" style="color:#94a3b8">{{ u.email }}</td>
+              <td class="py-3 pr-4">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                  [style.background]="u.role === 'ADMIN' ? 'rgba(99,102,241,0.15)' : 'rgba(148,163,184,0.15)'"
+                  [style.color]="u.role === 'ADMIN' ? '#818cf8' : '#94a3b8'">
+                  {{ u.role }}
+                </span>
+              </td>
+              <td class="py-3 pr-4">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                  [style.background]="u.enabled ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
+                  [style.color]="u.enabled ? '#4ade80' : '#f87171'">
+                  {{ u.enabled ? 'Actif' : 'Inactif' }}
+                </span>
+              </td>
+              <td class="py-3">
+                <div class="flex gap-2">
+                  <button (click)="askToggle(u)" class="px-3 py-1 rounded-lg text-xs font-medium transition-all"
+                    [style.background]="u.enabled ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)'"
+                    [style.color]="u.enabled ? '#f87171' : '#4ade80'">
+                    {{ u.enabled ? 'Désactiver' : 'Activer' }}
+                  </button>
+                  <button (click)="askDelete(u)" class="px-3 py-1 rounded-lg text-xs font-medium transition-all" style="background:#334155;color:#94a3b8">
+                    Supprimer
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between mt-4 pt-4" style="border-top:1px solid #334155">
+        <p class="text-xs" style="color:#64748b">{{ filtered.length }} utilisateur(s) affiché(s)</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal Confirmation -->
+<div *ngIf="showConfirm" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
+  <div class="w-80 p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
+    <h3 class="font-semibold mb-2" style="color:#f1f5f9">{{ confirmTitle }}</h3>
+    <p class="text-sm mb-6" style="color:#94a3b8">{{ confirmMsg }}</p>
+    <div class="flex gap-3">
+      <button (click)="cancelConfirm()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+      <button (click)="confirm()" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-white"
+        [style.background]="confirmDanger ? '#dc2626' : '#16a34a'">
+        Confirmer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Créer Admin -->
+<div *ngIf="showCreateModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
+  <div class="w-full max-w-md p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-lg" style="color:#f1f5f9">Nouvel Administrateur</h3>
+      <button (click)="closeCreateModal()" style="color:#64748b">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div *ngIf="createError" class="mb-4 p-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171">{{ createError }}</div>
+    <form (ngSubmit)="createAdmin()" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Prénom</label>
+          <input [(ngModel)]="createForm.firstName" name="firstName" type="text" placeholder="Prénom" class="input-field" required/>
+        </div>
+        <div>
+          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Nom</label>
+          <input [(ngModel)]="createForm.lastName" name="lastName" type="text" placeholder="Nom" class="input-field" required/>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Email</label>
+        <input [(ngModel)]="createForm.email" name="email" type="email" placeholder="admin@example.com" class="input-field" required/>
+      </div>
+      <div>
+        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Mot de passe</label>
+        <input [(ngModel)]="createForm.password" name="password" type="password" placeholder="••••••••" class="input-field" required/>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="closeCreateModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+        <button type="submit" [disabled]="creating" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;color:white">
+          {{ creating ? 'Création...' : 'Créer Admin' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

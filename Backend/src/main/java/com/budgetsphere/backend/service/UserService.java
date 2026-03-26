@@ -24,6 +24,13 @@ public class UserService {
         return userRepository.findAll().stream().map(userMapper::toDto).toList();
     }
 
+    public UserDto toggleUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setEnabled(!user.isEnabled());
+        return userMapper.toDto(userRepository.save(user));
+    }
+
     public UserDto createAdmin(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");

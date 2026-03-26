@@ -47,16 +47,11 @@
 
     <!-- Filters -->
     <div class="card p-4 mb-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" type="text" placeholder="🔍 Rechercher..." class="input-field"/>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <select [(ngModel)]="filterType" (ngModelChange)="applyFilters()" class="input-field">
           <option value="">Tous les types</option>
           <option value="INCOME">Revenus</option>
           <option value="EXPENSE">Dépenses</option>
-        </select>
-        <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="input-field">
-          <option value="">Toutes catégories</option>
-          <option *ngFor="let cat of categories" [value]="cat.value">{{ cat.label }}</option>
         </select>
         <button (click)="resetFilters()" class="input-field text-center cursor-pointer" style="color:#94a3b8">Réinitialiser</button>
       </div>
@@ -122,7 +117,7 @@
         </table>
       </div>
       <div class="p-4 flex items-center justify-between" style="border-top:1px solid #334155">
-        <p class="text-xs" style="color:#64748b">{{ filteredTransactions.length }} transaction{{ filteredTransactions.length > 1 ? 's' : '' }}</p>
+        <p class="text-xs" style="color:#64748b">{{ totalElements }} transaction{{ totalElements > 1 ? 's' : '' }}</p>
         <div class="flex gap-2">
           <button *ngFor="let p of pages" (click)="goPage(p)" class="px-3 py-1.5 rounded-lg text-xs"
             [style.background]="currentPage === p ? '#4f46e5' : '#1e293b'"
