@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -62,6 +62,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   email = '';
   password = '';
@@ -76,6 +77,7 @@ export class LoginComponent {
       error: (err) => {
         this.error = err.error?.message || 'Email ou mot de passe incorrect';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
