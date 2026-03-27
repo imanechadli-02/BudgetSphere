@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NeedService } from '../../core/services/need.service';
@@ -32,6 +32,7 @@ const STATUS_BG: Record<string, string> = { PENDING: '#334155', IN_PROGRESS: 'rg
 })
 export class NeedsComponent implements OnInit {
   private needService = inject(NeedService);
+  private cdr = inject(ChangeDetectorRef);
 
   needs: Need[] = [];
   filtered: Need[] = [];
@@ -45,7 +46,6 @@ export class NeedsComponent implements OnInit {
   filterPriority = '';
 
   form = { title: '', estimatedPrice: null as any, status: 'PENDING', priority: 'MEDIUM' };
-
   statuses = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
   priorities = Object.entries(PRIORITY_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -54,23 +54,20 @@ export class NeedsComponent implements OnInit {
   load() {
     this.loading = true;
     this.needService.getAll().subscribe({
-      next: res => { this.needs = res.content; this.applyFilters(); this.loading = false; },
-      error: () => { this.loading = false; }
+      next: res => { this.needs = res.content ?? []; this.loading = false; this.applyFilters(); },
+      error: () => { this.loading = false; this.cdr.detectChanges(); }
     });
   }
 
   applyFilters() {
     let result = [...this.needs];
-    if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
-      result = result.filter(n => n.title.toLowerCase().includes(q));
-    }
+    const q = this.searchQuery.toLowerCase();
+    if (q) result = result.filter(n => n.title.toLowerCase().includes(q));
     if (this.filterStatus) result = result.filter(n => n.status === this.filterStatus);
     if (this.filterPriority) result = result.filter(n => n.priority === this.filterPriority);
     this.filtered = result;
+    this.cdr.detectChanges();
   }
-
-  resetFilters() { this.searchQuery = ''; this.filterStatus = ''; this.filterPriority = ''; this.applyFilters(); }
 
   get totalEstimated() { return this.filtered.reduce((s, n) => s + n.estimatedPrice, 0); }
   get countFulfilled() { return this.needs.filter(n => n.status === 'FULFILLED').length; }
@@ -96,26 +93,44 @@ export class NeedsComponent implements OnInit {
     const payload = { ...this.form, estimatedPrice: parseFloat(this.form.estimatedPrice) };
     const req = this.editId ? this.needService.update(this.editId, payload) : this.needService.create(payload);
     req.subscribe({
-      next: () => { this.closeModal(); this.load(); this.saving = false; },
-      error: (err) => { this.formError = err.error?.message || 'Une erreur est survenue'; this.saving = false; }
+      next: (saved: Need) => {
+        if (this.editId) {
+          const idx = this.needs.findIndex(n => n.id === this.editId);
+          if (idx !== -1) this.needs[idx] = saved;
+        } else {
+          this.needs = [saved, ...this.needs];
+        }
+        this.saving = false;
+        this.showModal = false;
+        this.applyFilters();
+      },
+      error: (err) => {
+        this.formError = err.error?.message || 'Une erreur est survenue';
+        this.saving = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   deleteNeed(id: number) {
     if (!confirm('Supprimer ce besoin ?')) return;
-    this.needService.delete(id).subscribe(() => this.load());
+    this.needService.delete(id).subscribe(() => {
+      this.needs = this.needs.filter(n => n.id !== id);
+      this.applyFilters();
+    });
   }
 
   cycleStatus(n: Need) {
     const order: Need['status'][] = ['PENDING', 'IN_PROGRESS', 'FULFILLED'];
     const next = order[(order.indexOf(n.status) + 1) % order.length];
-    this.needService.updateStatus(n.id, next).subscribe(() => this.load());
+    this.needService.updateStatus(n.id, next).subscribe(updated => {
+      const idx = this.needs.findIndex(x => x.id === n.id);
+      if (idx !== -1) this.needs[idx] = updated;
+      this.applyFilters();
+    });
   }
 
-  getBudgetByPriority(priority: string) {
-    return this.needs.filter(n => n.priority === priority).reduce((s, n) => s + n.estimatedPrice, 0);
-  }
-
+  getBudgetByPriority(p: string) { return this.needs.filter(n => n.priority === p).reduce((s, n) => s + n.estimatedPrice, 0); }
   getPriorityLabel(p: string) { return PRIORITY_LABELS[p] || p; }
   getPriorityColor(p: string) { return PRIORITY_COLORS[p] || '#94a3b8'; }
   getPriorityBg(p: string) { return PRIORITY_BG[p] || '#334155'; }

@@ -46,9 +46,7 @@
                 <span class="w-2 h-2 rounded-full" [style.background]="getPriorityColor(p.value)"></span>
                 <span style="color:#94a3b8">{{ p.label }}</span>
               </div>
-              <span class="font-medium" style="color:#f1f5f9">
-                {{ getBudgetByPriority(p.value) | number:'1.0-0' }} €
-              </span>
+              <span class="font-medium" style="color:#f1f5f9">{{ getBudgetByPriority(p.value) | number:'1.0-0' }} €</span>
             </div>
             <div *ngIf="needs.length === 0" class="text-xs" style="color:#475569">Aucun article</div>
           </div>
@@ -71,7 +69,7 @@
               <option value="">Tous les statuts</option>
               <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
             </select>
-            <button (click)="resetFilters()" class="px-4 py-2 rounded-xl text-sm transition-all" style="background:#334155;color:#94a3b8">
+            <button (click)="searchQuery=''; filterStatus=''; filterPriority=''; applyFilters()" class="px-4 py-2 rounded-xl text-sm transition-all" style="background:#334155;color:#94a3b8">
               Réinitialiser
             </button>
           </div>
@@ -96,7 +94,6 @@
               [class.item-fulfilled]="n.status === 'FULFILLED'"
               style="border-bottom:1px solid #0f172a">
 
-              <!-- Status toggle -->
               <button (click)="cycleStatus(n)" class="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
                 [style.border-color]="getStatusColor(n.status)"
                 [style.background]="n.status === 'FULFILLED' ? getStatusColor(n.status) : 'transparent'">
@@ -142,7 +139,6 @@
             </div>
           </div>
 
-          <!-- Total -->
           <div class="p-4 flex items-center justify-between" style="border-top:1px solid #334155">
             <span class="text-sm" style="color:#94a3b8">Total estimé</span>
             <span class="font-bold text-lg" style="color:#f1f5f9">{{ totalEstimated | number:'1.0-2' }} €</span>
