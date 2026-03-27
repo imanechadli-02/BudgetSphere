@@ -2,6 +2,7 @@ import { Component, OnInit, inject, AfterViewInit, OnDestroy, ChangeDetectorRef 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SavingGoalService } from '../../core/services/saving-goal.service';
+import { TransactionService } from '../../core/services/transaction.service';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { SavingGoal } from '../../core/models/models';
 
@@ -25,8 +26,14 @@ const GOAL_COLORS = ['#6366f1', '#a855f7', '#22c55e', '#eab308', '#ec4899', '#06
 })
 export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   private savingService = inject(SavingGoalService);
+  private txService = inject(TransactionService);
   private cdr = inject(ChangeDetectorRef);
 
+  totalIncome = 0;
+  totalExpense = 0;
+  balance = 0;
+
+  readonly today = new Date().toISOString().split('T')[0];
   goals: SavingGoal[] = [];
   loading = false;
   saving = false;
@@ -48,7 +55,16 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   private radarChart: any = null;
   private lineChart: any = null;
 
-  ngOnInit() { this.load(); }
+  ngOnInit() { this.load(); this.loadStats(); }
+
+  loadStats() {
+    this.txService.getStats().subscribe(s => {
+      this.totalIncome = s.totalIncome;
+      this.totalExpense = s.totalExpense;
+      this.balance = s.balance;
+      this.cdr.detectChanges();
+    });
+  }
 
   ngAfterViewInit() {}
 
@@ -101,6 +117,9 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.form.title || !this.form.targetAmount || !this.form.deadline) {
       this.formError = 'Nom, montant cible et date sont requis.'; return;
     }
+    if (new Date(this.form.deadline) <= new Date()) {
+      this.formError = 'La date cible doit être dans le futur.'; return;
+    }
     this.saving = true; this.formError = '';
     const payload = {
       title: this.form.title,
@@ -123,7 +142,16 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
         setTimeout(() => this.renderCharts(), 100);
       },
-      error: (err) => { this.formError = err.error?.message || 'Une erreur est survenue'; this.saving = false; this.cdr.detectChanges(); }
+      error: (err) => {
+        const e = err.error;
+        if (e?.messages) {
+          this.formError = Object.values(e.messages).join(' | ');
+        } else {
+          this.formError = e?.message || 'Une erreur est survenue';
+        }
+        this.saving = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -131,6 +159,7 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!confirm('Supprimer cet objectif ?')) return;
     this.savingService.delete(id).subscribe(() => {
       this.goals = this.goals.filter(g => g.id !== id);
+      this.loadStats();
       this.cdr.detectChanges();
       setTimeout(() => this.renderCharts(), 100);
     });
@@ -150,6 +179,7 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
       const idx = this.goals.findIndex(g => g.id === goal.id);
       if (idx !== -1) this.goals[idx] = goal;
       this.closeDeposit();
+      this.loadStats();
       this.cdr.detectChanges();
       setTimeout(() => this.renderCharts(), 100);
     });

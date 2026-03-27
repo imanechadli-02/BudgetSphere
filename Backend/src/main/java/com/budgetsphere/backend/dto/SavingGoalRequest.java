@@ -26,10 +26,9 @@ public class SavingGoalRequest {
     private BigDecimal currentAmount;
 
     @NotNull(message = "Deadline is required")
-    @Future(message = "Deadline must be in the future")
     private LocalDate deadline;
 
     @NotNull(message = "Monthly contribution is required")
-    @Positive(message = "Monthly contribution must be positive")
+    @PositiveOrZero(message = "Monthly contribution must be positive or zero")
     private BigDecimal monthlyContribution;
 }

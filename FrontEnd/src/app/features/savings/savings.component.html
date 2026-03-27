@@ -15,7 +15,7 @@
     </div>
 
     <!-- KPI -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
       <div class="card p-5">
         <p class="text-sm mb-1" style="color:#94a3b8">Total Épargné</p>
         <p class="text-3xl font-bold" style="color:#818cf8">{{ totalSaved | number:'1.0-0' }} €</p>
@@ -30,6 +30,11 @@
         <p class="text-sm mb-1" style="color:#94a3b8">Objectifs Atteints</p>
         <p class="text-3xl font-bold" style="color:#4ade80">{{ countAchieved }}</p>
         <p class="text-xs mt-1" style="color:#475569">complétés</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-1" style="color:#94a3b8">Solde Disponible</p>
+        <p class="text-3xl font-bold" [style.color]="balance >= 0 ? '#4ade80' : '#f87171'">{{ balance | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">revenus - dépenses</p>
       </div>
     </div>
 
@@ -139,7 +144,7 @@
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="text-sm mb-1.5 block" style="color:#94a3b8">Date cible</label>
-          <input [(ngModel)]="form.deadline" name="deadline" type="date" class="input-field" required/>
+          <input [(ngModel)]="form.deadline" name="deadline" type="date" [min]="today" class="input-field" required/>
         </div>
         <div>
           <label class="text-sm mb-1.5 block" style="color:#94a3b8">Versement mensuel (€)</label>

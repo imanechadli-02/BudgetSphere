@@ -34,6 +34,10 @@ public class SavingGoal {
     @Column(nullable = false)
     private BigDecimal monthlyContribution;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private BigDecimal contributedAmount = BigDecimal.ZERO;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
