@@ -9,6 +9,10 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  checkEmail(email: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.apiUrl}/check-email?email=${email}`);
+  }
+
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
       tap(res => {
@@ -21,8 +25,8 @@ export class AuthService {
   register(data: any): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap(res => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('user', JSON.stringify(res.user));
+        if (res?.token) localStorage.setItem('token', res.token);
+        if (res?.user) localStorage.setItem('user', JSON.stringify(res.user));
       })
     );
   }

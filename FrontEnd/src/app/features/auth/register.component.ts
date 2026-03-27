@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -76,6 +76,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   firstName = '';
   lastName = '';
@@ -85,13 +86,21 @@ export class RegisterComponent {
   loading = false;
 
   register() {
+    if (!this.firstName || !this.lastName || !this.email || !this.password) {
+      this.error = 'Tous les champs sont requis.'; return;
+    }
     this.loading = true;
     this.error = '';
     this.authService.register({ firstName: this.firstName, lastName: this.lastName, email: this.email, password: this.password }).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => { this.loading = false; this.router.navigate(['/dashboard']); },
       error: (err) => {
-        this.error = err.error?.message || 'Une erreur est survenue';
+        const e = err.error;
+        if (typeof e === 'string') this.error = e;
+        else if (e?.messages) this.error = Object.values(e.messages).join(' | ');
+        else if (e?.message) this.error = e.message;
+        else this.error = 'Une erreur est survenue';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }

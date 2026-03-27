@@ -25,9 +25,13 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
     
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new RuntimeException("Cet email est déjà utilisé");
         }
         
         User user = User.builder()
