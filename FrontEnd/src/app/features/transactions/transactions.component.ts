@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionService } from '../../core/services/transaction.service';
@@ -30,6 +30,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 })
 export class TransactionsComponent implements OnInit {
   private txService = inject(TransactionService);
+  private cdr = inject(ChangeDetectorRef);
 
   pagedTransactions: Transaction[] = [];
   loading = false;
@@ -38,6 +39,8 @@ export class TransactionsComponent implements OnInit {
   editId: number | null = null;
   formError = '';
   filterType = '';
+  dateFrom = '';
+  dateTo = '';
   currentPage = 1;
   totalPages = 1;
   totalElements = 0;
@@ -57,6 +60,7 @@ export class TransactionsComponent implements OnInit {
       this.totalIncome = s.totalIncome;
       this.totalExpense = s.totalExpense;
       this.balance = s.balance;
+      this.cdr.detectChanges();
     });
   }
 
@@ -64,21 +68,22 @@ export class TransactionsComponent implements OnInit {
 
   loadPage() {
     this.loading = true;
-    this.txService.getAll(this.currentPage - 1, this.PAGE_SIZE, this.filterType || undefined).subscribe({
+    this.txService.getAll(this.currentPage - 1, this.PAGE_SIZE, this.filterType || undefined, undefined, this.dateFrom || undefined, this.dateTo || undefined).subscribe({
       next: res => {
         this.pagedTransactions = res.content;
         this.totalElements = res.totalElements;
         this.totalPages = res.totalPages || Math.ceil(res.totalElements / this.PAGE_SIZE) || 1;
         this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: () => { this.loading = false; }
+      error: () => { this.loading = false; this.cdr.detectChanges(); }
     });
   }
 
   applyFilters() { this.currentPage = 1; this.loadPage(); }
 
-  resetFilters() { this.filterType = ''; this.applyFilters(); }
+  resetFilters() { this.filterType = ''; this.dateFrom = ''; this.dateTo = ''; this.applyFilters(); }
 
   goPage(p: number) { this.currentPage = p; this.loadPage(); }
 
@@ -102,14 +107,35 @@ export class TransactionsComponent implements OnInit {
     const payload = { ...this.form, amount: parseFloat(this.form.amount) };
     const req = this.editId ? this.txService.update(this.editId, payload) : this.txService.create(payload);
     req.subscribe({
-      next: () => { this.closeModal(); this.load(); this.saving = false; },
-      error: (err) => { this.formError = err.error?.message || 'Une erreur est survenue'; this.saving = false; }
+      next: (tx) => {
+        if (this.editId) {
+          const idx = this.pagedTransactions.findIndex(t => t.id === this.editId);
+          if (idx !== -1) this.pagedTransactions[idx] = tx;
+        } else {
+          this.pagedTransactions = [tx, ...this.pagedTransactions].slice(0, this.PAGE_SIZE);
+          this.totalElements++;
+        }
+        this.loadStats();
+        this.closeModal();
+        this.saving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.formError = err.error?.message || 'Une erreur est survenue';
+        this.saving = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   deleteTx(id: number) {
     if (!confirm('Supprimer cette transaction ?')) return;
-    this.txService.delete(id).subscribe(() => this.load());
+    this.txService.delete(id).subscribe(() => {
+      this.pagedTransactions = this.pagedTransactions.filter(t => t.id !== id);
+      this.totalElements--;
+      this.loadStats();
+      this.cdr.detectChanges();
+    });
   }
 
   getLabel(cat: string) { return CATEGORY_LABELS[cat] || cat; }

@@ -13,11 +13,12 @@ export class TransactionService {
     return this.http.get<any>(`${this.apiUrl}/stats`);
   }
 
-  getAll(page = 0, size = 10, type?: string, category?: string): Observable<PageResponse<Transaction>> {
+  getAll(page = 0, size = 10, type?: string, category?: string, from?: string, to?: string): Observable<PageResponse<Transaction>> {
+    const base = type ? `${this.apiUrl}/type/${type}` : this.apiUrl;
     let params = `page=${page}&size=${size}`;
-    if (type) params += `&type=${type}`;
-    if (category) params += `&category=${category}`;
-    return this.http.get<PageResponse<Transaction>>(`${this.apiUrl}?${params}`);
+    if (from) params += `&from=${from}`;
+    if (to) params += `&to=${to}`;
+    return this.http.get<PageResponse<Transaction>>(`${base}?${params}`);
   }
 
   create(data: any): Observable<Transaction> {

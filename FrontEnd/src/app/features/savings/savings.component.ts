@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SavingGoalService } from '../../core/services/saving-goal.service';
@@ -25,6 +25,7 @@ const GOAL_COLORS = ['#6366f1', '#a855f7', '#22c55e', '#eab308', '#ec4899', '#06
 })
 export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   private savingService = inject(SavingGoalService);
+  private cdr = inject(ChangeDetectorRef);
 
   goals: SavingGoal[] = [];
   loading = false;
@@ -62,9 +63,10 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
       next: res => {
         this.goals = res.content;
         this.loading = false;
+        this.cdr.detectChanges();
         setTimeout(() => this.renderCharts(), 100);
       },
-      error: () => { this.loading = false; }
+      error: () => { this.loading = false; this.cdr.detectChanges(); }
     });
   }
 
@@ -109,14 +111,29 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     const req = this.editId ? this.savingService.update(this.editId, payload) : this.savingService.create(payload);
     req.subscribe({
-      next: () => { this.closeModal(); this.load(); this.saving = false; },
-      error: (err) => { this.formError = err.error?.message || 'Une erreur est survenue'; this.saving = false; }
+      next: (goal) => {
+        if (this.editId) {
+          const idx = this.goals.findIndex(g => g.id === this.editId);
+          if (idx !== -1) this.goals[idx] = goal;
+        } else {
+          this.goals = [goal, ...this.goals];
+        }
+        this.closeModal();
+        this.saving = false;
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderCharts(), 100);
+      },
+      error: (err) => { this.formError = err.error?.message || 'Une erreur est survenue'; this.saving = false; this.cdr.detectChanges(); }
     });
   }
 
   deleteGoal(id: number) {
     if (!confirm('Supprimer cet objectif ?')) return;
-    this.savingService.delete(id).subscribe(() => this.load());
+    this.savingService.delete(id).subscribe(() => {
+      this.goals = this.goals.filter(g => g.id !== id);
+      this.cdr.detectChanges();
+      setTimeout(() => this.renderCharts(), 100);
+    });
   }
 
   openDeposit(g: SavingGoal) {
@@ -129,9 +146,12 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmDeposit() {
     if (!this.depositGoal || !this.depositAmount || this.depositAmount <= 0) return;
-    this.savingService.addContribution(this.depositGoal.id, this.depositAmount).subscribe(() => {
+    this.savingService.addContribution(this.depositGoal.id, this.depositAmount).subscribe(goal => {
+      const idx = this.goals.findIndex(g => g.id === goal.id);
+      if (idx !== -1) this.goals[idx] = goal;
       this.closeDeposit();
-      this.load();
+      this.cdr.detectChanges();
+      setTimeout(() => this.renderCharts(), 100);
     });
   }
 
