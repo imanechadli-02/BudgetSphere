@@ -71,12 +71,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   categories = Object.entries(CAT_META).map(([value, m]) => ({ value, label: m.label }));
   frequencies = Object.entries(FREQ_LABELS).map(([value, label]) => ({ value, label }));
 
-  private barChart: any = null;
-  private pieChart: any = null;
-  private trendChart: any = null;
-
   ngOnInit() { this.load(); }
-  ngOnDestroy() { this.barChart?.destroy(); this.pieChart?.destroy(); this.trendChart?.destroy(); }
+  ngOnDestroy() {}
 
   load() {
     this.loading = true;
@@ -93,7 +89,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           .reduce((s, t) => s + t.amount, 0);
         this.loading = false;
         this.applyFilters();
-        setTimeout(() => this.renderCharts(), 100);
       },
       error: () => { this.loading = false; this.cdr.detectChanges(); }
     });
@@ -202,7 +197,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           }
           this.saving = false; this.showModal = false;
           this.applyFilters();
-          setTimeout(() => this.renderCharts(), 100);
         },
         error: (err) => { this.formError = err.error?.message || 'Erreur'; this.saving = false; this.cdr.detectChanges(); }
       });
@@ -230,7 +224,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           }
           this.saving = false; this.showModal = false;
           this.applyFilters();
-          setTimeout(() => this.renderCharts(), 100);
         },
         error: (err) => { this.formError = err.error?.message || 'Erreur'; this.saving = false; this.cdr.detectChanges(); }
       });
@@ -242,7 +235,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.varService.delete(id).subscribe(() => {
       this.variableExpenses = this.variableExpenses.filter(e => e.id !== id);
       this.applyFilters();
-      setTimeout(() => this.renderCharts(), 100);
     });
   }
 
@@ -251,70 +243,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.fixService.delete(id).subscribe(() => {
       this.fixedExpenses = this.fixedExpenses.filter(e => e.id !== id);
       this.applyFilters();
-      setTimeout(() => this.renderCharts(), 100);
     });
   }
 
-
-  // --- Charts ---
-  renderCharts() {
-    const win = window as any;
-    if (!win.Chart) return;
-    this.barChart?.destroy();
-    this.pieChart?.destroy();
-    this.trendChart?.destroy();
-
-    const barEl = document.getElementById('barChart') as HTMLCanvasElement;
-    const pieEl = document.getElementById('pieChart') as HTMLCanvasElement;
-    const trendEl = document.getElementById('trendChart') as HTMLCanvasElement;
-
-    const cats = this.spentByCategory;
-
-    if (barEl && cats.length > 0) {
-      this.barChart = new win.Chart(barEl.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: cats.map(c => c.label),
-          datasets: [{ label: 'Dépensé (€)', data: cats.map(c => c.spent), backgroundColor: cats.map(c => c.color), borderRadius: 6 }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: '#64748b' }, grid: { display: false } },
-            y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
-          }
-        }
-      });
-    }
-
-    if (pieEl && cats.length > 0) {
-      this.pieChart = new win.Chart(pieEl.getContext('2d'), {
-        type: 'doughnut',
-        data: { labels: cats.map(c => c.label), datasets: [{ data: cats.map(c => c.spent), backgroundColor: cats.map(c => c.color), borderWidth: 0, hoverOffset: 6 }] },
-        options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } } } }
-      });
-    }
-
-    if (trendEl) {
-      const trend = this.monthlyTrend;
-      this.trendChart = new win.Chart(trendEl.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: trend.map(t => t.label),
-          datasets: [{ label: 'Dépenses variables (€)', data: trend.map(t => t.total), borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', tension: 0.4, fill: true, pointRadius: 4 }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
-          scales: {
-            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
-            y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
-          }
-        }
-      });
-    }
-  }
 
   getCatLabel(cat: string) { return CAT_META[cat]?.label || cat; }
   getCatIcon(cat: string) { return CAT_META[cat]?.icon || '📦'; }

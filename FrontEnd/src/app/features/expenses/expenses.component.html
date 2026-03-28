@@ -64,19 +64,6 @@
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-      <div class="card p-5 xl:col-span-2">
-        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Dépenses par Catégorie</h2>
-        <div *ngIf="allExpenses.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune dépense</div>
-        <canvas *ngIf="allExpenses.length > 0" id="barChart" height="130"></canvas>
-      </div>
-      <div class="card p-5">
-        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition</h2>
-        <div *ngIf="allExpenses.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune donnée</div>
-        <canvas *ngIf="allExpenses.length > 0" id="pieChart" height="200"></canvas>
-      </div>
-    </div>
 
     <!-- Budget par catégorie -->
     <div class="mb-6" *ngIf="spentByCategory.length > 0">
