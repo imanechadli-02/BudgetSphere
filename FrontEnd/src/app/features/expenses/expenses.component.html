@@ -15,11 +15,11 @@
     </div>
 
     <!-- KPI -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
       <div class="card p-5">
-        <p class="text-sm mb-1" style="color:#94a3b8">Total Dépensé</p>
-        <p class="text-3xl font-bold" style="color:#f87171">{{ totalAll | number:'1.0-0' }} €</p>
-        <p class="text-xs mt-1" style="color:#475569">variables + fixes</p>
+        <p class="text-sm mb-1" style="color:#94a3b8">Revenus Totaux</p>
+        <p class="text-3xl font-bold" style="color:#4ade80">{{ totalIncome | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">total des revenus</p>
       </div>
       <div class="card p-5">
         <p class="text-sm mb-1" style="color:#94a3b8">Dépenses Variables</p>
@@ -30,6 +30,37 @@
         <p class="text-sm mb-1" style="color:#94a3b8">Dépenses Fixes</p>
         <p class="text-3xl font-bold" style="color:#facc15">{{ totalFixed | number:'1.0-0' }} €</p>
         <p class="text-xs mt-1" style="color:#475569">{{ fixedExpenses.length }} entrée(s)</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm mb-1" style="color:#94a3b8">Total Dépensé</p>
+        <p class="text-3xl font-bold" style="color:#f87171">{{ totalAll | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">variables + fixes</p>
+      </div>
+      <div class="card p-5" [style.border-color]="remainingIncome >= 0 ? '#22c55e' : '#ef4444'">
+        <p class="text-sm mb-1" style="color:#94a3b8">Reste du Revenu</p>
+        <p class="text-3xl font-bold" [style.color]="remainingIncome >= 0 ? '#4ade80' : '#f87171'">{{ remainingIncome | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#475569">{{ savingsRate }}% du revenu</p>
+      </div>
+    </div>
+
+    <!-- Barre de progression budget -->
+    <div class="card p-5 mb-6" *ngIf="totalIncome > 0">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-sm" style="color:#f1f5f9">Utilisation du Revenu</h2>
+        <span class="text-sm font-medium" [style.color]="remainingIncome >= 0 ? '#4ade80' : '#f87171'">
+          {{ totalAll | number:'1.0-0' }} € / {{ totalIncome | number:'1.0-0' }} €
+        </span>
+      </div>
+      <div class="h-4 rounded-full overflow-hidden" style="background:#334155">
+        <div class="h-full rounded-full transition-all duration-500"
+          [style.width.%]="totalIncome > 0 ? Math.min((totalAll / totalIncome) * 100, 100) : 0"
+          [style.background]="(totalAll / totalIncome) >= 1 ? '#ef4444' : (totalAll / totalIncome) >= 0.8 ? '#facc15' : '#6366f1'">
+        </div>
+      </div>
+      <div class="flex justify-between text-xs mt-2" style="color:#64748b">
+        <span>Fixes : {{ totalFixed | number:'1.0-0' }} €</span>
+        <span>Variables : {{ totalVariable | number:'1.0-0' }} €</span>
+        <span [style.color]="remainingIncome >= 0 ? '#4ade80' : '#f87171'">Reste : {{ remainingIncome | number:'1.0-0' }} €</span>
       </div>
     </div>
 

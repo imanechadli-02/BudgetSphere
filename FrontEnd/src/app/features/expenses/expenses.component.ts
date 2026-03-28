@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VariableExpenseService } from '../../core/services/variable-expense.service';
 import { FixedExpenseService } from '../../core/services/fixed-expense.service';
+import { TransactionService } from '../../core/services/transaction.service';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { VariableExpense, FixedExpense } from '../../core/models/models';
 import { forkJoin } from 'rxjs';
@@ -45,9 +46,10 @@ const FREQ_LABELS: Record<string, string> = {
 export class ExpensesComponent implements OnInit, OnDestroy {
   private varService = inject(VariableExpenseService);
   private fixService = inject(FixedExpenseService);
+  private txService = inject(TransactionService);
   private cdr = inject(ChangeDetectorRef);
 
-  activeTab: 'variable' | 'fixed' | 'budgets' | 'analytics' = 'variable';
+  activeTab: 'variable' | 'fixed' = 'variable';
   loading = false;
   saving = false;
   showModal = false;
@@ -56,6 +58,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   searchQuery = '';
   filterCategory = '';
 
+  readonly Math = Math;
+  totalIncome = 0;
   variableExpenses: VariableExpense[] = [];
   fixedExpenses: FixedExpense[] = [];
   filteredVariable: VariableExpense[] = [];
@@ -78,11 +82,15 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.loading = true;
     forkJoin({
       variable: this.varService.getAll(),
-      fixed: this.fixService.getAll()
+      fixed: this.fixService.getAll(),
+      transactions: this.txService.getAll(0, 200)
     }).subscribe({
-      next: ({ variable, fixed }) => {
+      next: ({ variable, fixed, transactions }) => {
         this.variableExpenses = variable.content;
         this.fixedExpenses = fixed.content;
+        this.totalIncome = transactions.content
+          .filter(t => t.type === 'INCOME')
+          .reduce((s, t) => s + t.amount, 0);
         this.loading = false;
         this.applyFilters();
         setTimeout(() => this.renderCharts(), 100);
@@ -113,6 +121,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   get totalVariable() { return this.variableExpenses.reduce((s, e) => s + e.amount, 0); }
   get totalFixed() { return this.fixedExpenses.reduce((s, e) => s + e.amount, 0); }
   get totalAll() { return this.totalVariable + this.totalFixed; }
+  get remainingIncome() { return this.totalIncome - this.totalAll; }
+  get savingsRate() { return this.totalIncome > 0 ? Math.round((this.remainingIncome / this.totalIncome) * 100) : 0; }
 
   get spentByCategory(): { key: string; label: string; icon: string; color: string; bg: string; spent: number }[] {
     const map: Record<string, number> = {};
@@ -138,9 +148,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   openModal() {
     this.editId = null; this.formError = '';
     const today = new Date().toISOString().split('T')[0];
-    if (this.activeTab === 'variable' || this.activeTab === 'analytics' || this.activeTab === 'budgets') {
+    if (this.activeTab === 'variable') {
       this.varForm = { title: '', amount: null, description: '', expenseDate: today, endDate: '', category: 'FOOD' };
-      this.activeTab = 'variable';
     } else {
       this.fixForm = { title: '', amount: null, description: '', frequency: 'MONTHLY', startDate: today, endDate: '', category: 'HOUSING' };
     }
@@ -161,6 +170,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   closeModal() { this.showModal = false; }
 
+  private readonly CAT_MAP: Record<string, string> = {
+    FOOD: 'FOOD', TRANSPORT: 'TRANSPORT', HEALTH: 'HEALTH',
+    ENTERTAINMENT: 'ENTERTAINMENT', EDUCATION: 'EDUCATION', SHOPPING: 'SHOPPING',
+    HOUSING: 'HOUSING', UTILITIES: 'OTHER', SUBSCRIPTIONS: 'OTHER', OTHER: 'OTHER'
+  };
+
   save() {
     this.saving = true; this.formError = '';
     if (this.activeTab === 'variable') {
@@ -176,6 +191,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             if (idx !== -1) this.variableExpenses[idx] = saved;
           } else {
             this.variableExpenses = [saved, ...this.variableExpenses];
+            this.txService.create({
+              description: saved.title,
+              amount: saved.amount,
+              type: 'EXPENSE',
+              category: this.CAT_MAP[saved.category] || 'OTHER',
+              date: saved.expenseDate,
+              recurring: false
+            }).subscribe();
           }
           this.saving = false; this.showModal = false;
           this.applyFilters();
@@ -196,6 +219,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             if (idx !== -1) this.fixedExpenses[idx] = saved;
           } else {
             this.fixedExpenses = [saved, ...this.fixedExpenses];
+            this.txService.create({
+              description: saved.title,
+              amount: saved.amount,
+              type: 'EXPENSE',
+              category: this.CAT_MAP[saved.category] || 'OTHER',
+              date: saved.startDate,
+              recurring: true
+            }).subscribe();
           }
           this.saving = false; this.showModal = false;
           this.applyFilters();
