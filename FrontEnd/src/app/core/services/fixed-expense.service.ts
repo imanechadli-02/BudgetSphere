@@ -5,7 +5,7 @@ import { FixedExpense, PageResponse } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class FixedExpenseService {
-  private apiUrl = 'http://localhost:8080/api/user/fixed-expenses';
+  private apiUrl = 'http://localhost:8080/api/user/expenses/fixed';
 
   constructor(private http: HttpClient) {}
 

@@ -38,6 +38,18 @@ export interface SavingGoal {
   userId: number;
 }
 
+export interface Budget {
+  id: number;
+  category: string;
+  monthlyLimit: number;
+  spent: number;
+  remaining: number;
+  percentage: number;
+  month: number;
+  year: number;
+  userId: number;
+}
+
 export interface VariableExpense {
   id: number;
   title: string;

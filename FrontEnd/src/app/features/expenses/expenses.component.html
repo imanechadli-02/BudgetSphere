@@ -48,22 +48,22 @@
     </div>
 
     <!-- Budget par catégorie -->
-    <div class="mb-6" *ngIf="budgetByCategory.length > 0">
+    <div class="mb-6" *ngIf="spentByCategory.length > 0">
       <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition par Catégorie</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div *ngFor="let entry of budgetByCategory" class="card p-5">
+        <div *ngFor="let entry of spentByCategory" class="card p-5">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
-              <span class="text-xl">{{ entry[1].icon }}</span>
-              <span class="font-medium text-sm" style="color:#f1f5f9">{{ entry[1].label }}</span>
+              <span class="text-xl">{{ entry.icon }}</span>
+              <span class="font-medium text-sm" style="color:#f1f5f9">{{ entry.label }}</span>
             </div>
-            <span class="font-bold text-sm" style="color:#f87171">{{ entry[1].spent | number:'1.0-0' }} €</span>
+            <span class="font-bold text-sm" style="color:#f87171">{{ entry.spent | number:'1.0-0' }} €</span>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="totalAll > 0 ? (entry[1].spent / totalAll) * 100 : 0" [style.background]="entry[1].color"></div>
+            <div class="progress-fill" [style.width.%]="totalAll > 0 ? (entry.spent / totalAll) * 100 : 0" [style.background]="entry.color"></div>
           </div>
           <p class="text-xs mt-2" style="color:#475569">
-            {{ totalAll > 0 ? ((entry[1].spent / totalAll) * 100 | number:'1.0-0') : 0 }}% du total
+            {{ totalAll > 0 ? ((entry.spent / totalAll) * 100 | number:'1.0-0') : 0 }}% du total
           </p>
         </div>
       </div>

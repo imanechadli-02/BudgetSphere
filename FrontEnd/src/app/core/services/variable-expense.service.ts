@@ -5,7 +5,7 @@ import { VariableExpense, PageResponse } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class VariableExpenseService {
-  private apiUrl = 'http://localhost:8080/api/user/variable-expenses';
+  private apiUrl = 'http://localhost:8080/api/user/expenses/variable';
 
   constructor(private http: HttpClient) {}
 
