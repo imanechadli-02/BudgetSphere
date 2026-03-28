@@ -21,6 +21,10 @@ export class AdminService {
     return this.http.post<User>(`${this.apiUrl}/users`, data);
   }
 
+  changeRole(id: number, role: string): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/users/${id}/role?role=${role}`, {});
+  }
+
   deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/users/${id}`);
   }

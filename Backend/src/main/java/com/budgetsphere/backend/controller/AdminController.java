@@ -37,4 +37,9 @@ public class AdminController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/users/{id}/role")
+    public ResponseEntity<UserDto> changeRole(@PathVariable Long id, @RequestParam String role) {
+        return ResponseEntity.ok(userService.changeRole(id, role));
+    }
 }

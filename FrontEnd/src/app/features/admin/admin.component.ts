@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,6 +26,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private adminService = inject(AdminService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   users: User[] = [];
   filtered: User[] = [];
@@ -41,11 +42,11 @@ export class AdminComponent implements OnInit, OnDestroy {
   confirmDanger = false;
   private pendingAction: (() => void) | null = null;
 
-  // Modal create admin
-  showCreateModal = false;
-  createForm = { firstName: '', lastName: '', email: '', password: '' };
-  createError = '';
-  creating = false;
+  // Modal change role
+  showRoleModal = false;
+  selectedUser: User | null = null;
+  newRole = 'USER';
+  roleError = '';
 
   private barChart: any = null;
   private roleChart: any = null;
@@ -55,14 +56,12 @@ export class AdminComponent implements OnInit, OnDestroy {
     const u = this.currentUser;
     return `${u?.firstName?.[0] ?? ''}${u?.lastName?.[0] ?? ''}`.toUpperCase();
   }
-
   get totalUsers() { return this.users.length; }
   get activeUsers() { return this.users.filter(u => u.enabled).length; }
   get inactiveUsers() { return this.users.filter(u => !u.enabled).length; }
   get adminCount() { return this.users.filter(u => u.role === 'ADMIN').length; }
 
   ngOnInit() { this.load(); }
-
   ngOnDestroy() { this.barChart?.destroy(); this.roleChart?.destroy(); }
 
   load() {
@@ -72,6 +71,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         this.users = users;
         this.applyFilters();
         this.loading = false;
+        this.cdr.detectChanges();
         setTimeout(() => this.renderCharts(), 100);
       },
       error: () => { this.loading = false; }
@@ -115,37 +115,27 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.showConfirm = true;
   }
 
-  confirm() {
-    this.pendingAction?.();
-    this.showConfirm = false;
-    this.pendingAction = null;
-  }
-
+  confirm() { this.pendingAction?.(); this.showConfirm = false; this.pendingAction = null; }
   cancelConfirm() { this.showConfirm = false; this.pendingAction = null; }
 
-  openCreateModal() {
-    this.createForm = { firstName: '', lastName: '', email: '', password: '' };
-    this.createError = '';
-    this.showCreateModal = true;
+  openRoleModal(u: User) {
+    this.selectedUser = u;
+    this.newRole = u.role === 'ADMIN' ? 'USER' : 'ADMIN';
+    this.roleError = '';
+    this.showRoleModal = true;
   }
 
-  closeCreateModal() { this.showCreateModal = false; }
+  closeRoleModal() { this.showRoleModal = false; this.selectedUser = null; }
 
-  createAdmin() {
-    if (!this.createForm.firstName || !this.createForm.email || !this.createForm.password) {
-      this.createError = 'Tous les champs sont requis.'; return;
-    }
-    this.creating = true; this.createError = '';
-    this.adminService.createAdmin(this.createForm).subscribe({
-      next: () => { this.closeCreateModal(); this.load(); this.creating = false; },
-      error: (err) => { this.createError = err.error?.message || 'Erreur'; this.creating = false; }
+  confirmRoleChange() {
+    if (!this.selectedUser) return;
+    this.adminService.changeRole(this.selectedUser.id, this.newRole).subscribe({
+      next: () => { this.closeRoleModal(); this.load(); },
+      error: (err) => { this.roleError = err.error?.message || 'Erreur'; }
     });
   }
 
-  logout() {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+  logout() { this.authService.logout(); this.router.navigate(['/login']); }
 
   renderCharts() {
     const win = window as any;

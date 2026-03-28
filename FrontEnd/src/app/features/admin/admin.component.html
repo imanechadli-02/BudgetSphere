@@ -125,10 +125,6 @@
             <option value="inactive">Inactifs</option>
           </select>
           <button (click)="resetFilters()" class="px-3 py-2 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Reset</button>
-          <button (click)="openCreateModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium" style="background:#dc2626;color:white">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Nouvel Admin
-          </button>
         </div>
       </div>
 
@@ -182,9 +178,12 @@
                     [style.color]="u.enabled ? '#f87171' : '#4ade80'">
                     {{ u.enabled ? 'Désactiver' : 'Activer' }}
                   </button>
-                  <button (click)="askDelete(u)" class="px-3 py-1 rounded-lg text-xs font-medium transition-all" style="background:#334155;color:#94a3b8">
-                    Supprimer
+                  <button (click)="openRoleModal(u)" class="px-3 py-1 rounded-lg text-xs font-medium transition-all"
+                    [style.background]="u.role === 'ADMIN' ? 'rgba(234,179,8,0.15)' : 'rgba(99,102,241,0.15)'"
+                    [style.color]="u.role === 'ADMIN' ? '#facc15' : '#818cf8'">
+                    {{ u.role === 'ADMIN' ? '→ USER' : '→ ADMIN' }}
                   </button>
+                  <button (click)="askDelete(u)" class="px-3 py-1 rounded-lg text-xs font-medium transition-all" style="background:#334155;color:#94a3b8">Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -215,41 +214,34 @@
   </div>
 </div>
 
-<!-- Modal Créer Admin -->
-<div *ngIf="showCreateModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
-  <div class="w-full max-w-md p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
+<!-- Modal Changer Rôle -->
+<div *ngIf="showRoleModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.6)">
+  <div class="w-full max-w-sm p-6 rounded-2xl" style="background:#1e293b;border:1px solid #334155">
     <div class="flex items-center justify-between mb-5">
-      <h3 class="font-semibold text-lg" style="color:#f1f5f9">Nouvel Administrateur</h3>
-      <button (click)="closeCreateModal()" style="color:#64748b">
+      <h3 class="font-semibold text-lg" style="color:#f1f5f9">Changer le Rôle</h3>
+      <button (click)="closeRoleModal()" style="color:#64748b">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <div *ngIf="createError" class="mb-4 p-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171">{{ createError }}</div>
-    <form (ngSubmit)="createAdmin()" class="space-y-4">
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Prénom</label>
-          <input [(ngModel)]="createForm.firstName" name="firstName" type="text" placeholder="Prénom" class="input-field" required/>
-        </div>
-        <div>
-          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Nom</label>
-          <input [(ngModel)]="createForm.lastName" name="lastName" type="text" placeholder="Nom" class="input-field" required/>
-        </div>
-      </div>
-      <div>
-        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Email</label>
-        <input [(ngModel)]="createForm.email" name="email" type="email" placeholder="admin@example.com" class="input-field" required/>
-      </div>
-      <div>
-        <label class="text-sm mb-1.5 block" style="color:#94a3b8">Mot de passe</label>
-        <input [(ngModel)]="createForm.password" name="password" type="password" placeholder="••••••••" class="input-field" required/>
-      </div>
-      <div class="flex gap-3 pt-1">
-        <button type="button" (click)="closeCreateModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
-        <button type="submit" [disabled]="creating" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#dc2626;color:white">
-          {{ creating ? 'Création...' : 'Créer Admin' }}
-        </button>
-      </div>
-    </form>
+    <p class="text-sm mb-4" style="color:#94a3b8">
+      Utilisateur : <span style="color:#f1f5f9">{{ selectedUser?.firstName }} {{ selectedUser?.lastName }}</span>
+    </p>
+    <p class="text-sm mb-4" style="color:#94a3b8">
+      Rôle actuel : <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+        [style.background]="selectedUser?.role === 'ADMIN' ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)'"
+        [style.color]="selectedUser?.role === 'ADMIN' ? '#f87171' : '#818cf8'">{{ selectedUser?.role }}</span>
+    </p>
+    <div class="mb-5">
+      <label class="text-sm mb-1.5 block" style="color:#94a3b8">Nouveau rôle</label>
+      <select [(ngModel)]="newRole" class="input-field">
+        <option value="USER">USER</option>
+        <option value="ADMIN">ADMIN</option>
+      </select>
+    </div>
+    <div *ngIf="roleError" class="mb-4 p-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171">{{ roleError }}</div>
+    <div class="flex gap-3">
+      <button (click)="closeRoleModal()" class="flex-1 py-2.5 rounded-xl text-sm" style="background:#334155;color:#94a3b8">Annuler</button>
+      <button (click)="confirmRoleChange()" class="flex-1 py-2.5 rounded-xl text-sm font-medium" style="background:#4f46e5;color:white">Confirmer</button>
+    </div>
   </div>
 </div>

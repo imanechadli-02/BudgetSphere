@@ -48,4 +48,11 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
+
+    public UserDto changeRole(Long id, String role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setRole(Role.valueOf(role.toUpperCase()));
+        return userMapper.toDto(userRepository.save(user));
+    }
 }
