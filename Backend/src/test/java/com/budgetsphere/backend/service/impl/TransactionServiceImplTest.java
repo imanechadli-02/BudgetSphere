@@ -4,6 +4,7 @@ import com.budgetsphere.backend.dto.StatsDto;
 import com.budgetsphere.backend.dto.TransactionDto;
 import com.budgetsphere.backend.dto.TransactionRequest;
 import com.budgetsphere.backend.entity.*;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.mapper.TransactionMapper;
 import com.budgetsphere.backend.repository.TransactionRepository;
 import com.budgetsphere.backend.repository.UserRepository;
@@ -182,8 +183,8 @@ class TransactionServiceImplTest {
         when(transactionRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> transactionService.update(99L, request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Transaction not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Transaction");
     }
 
     // ── delete ────────────────────────────────────────────────────────────────

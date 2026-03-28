@@ -7,6 +7,8 @@ import com.budgetsphere.backend.mapper.SavingGoalMapper;
 import com.budgetsphere.backend.repository.SavingGoalRepository;
 import com.budgetsphere.backend.repository.TransactionRepository;
 import com.budgetsphere.backend.repository.UserRepository;
+import com.budgetsphere.backend.exception.BusinessException;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.service.SavingGoalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,7 +34,7 @@ public class SavingGoalServiceImpl implements SavingGoalService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
     }
 
     @Override
@@ -51,7 +53,7 @@ public class SavingGoalServiceImpl implements SavingGoalService {
     @Override
     public SavingGoalDto update(Long id, SavingGoalRequest request) {
         SavingGoal goal = savingGoalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Saving goal not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("SavingGoal", id));
         goal.setTitle(request.getTitle());
         goal.setTargetAmount(request.getTargetAmount());
         goal.setCurrentAmount(request.getCurrentAmount());
@@ -65,7 +67,7 @@ public class SavingGoalServiceImpl implements SavingGoalService {
     public SavingGoalDto addContribution(Long id, BigDecimal amount) {
         User user = getCurrentUser();
         SavingGoal goal = savingGoalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Saving goal not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("SavingGoal", id));
 
         goal.setCurrentAmount(goal.getCurrentAmount().add(amount));
         goal.setContributedAmount(goal.getContributedAmount().add(amount));
@@ -90,9 +92,9 @@ public class SavingGoalServiceImpl implements SavingGoalService {
     public void delete(Long id) {
         User user = getCurrentUser();
         SavingGoal goal = savingGoalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Saving goal not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("SavingGoal", id));
 
-        if (goal.getContributedAmount().compareTo(BigDecimal.ZERO) > 0) {
+        if (goal.getContributedAmount()).compareTo(BigDecimal.ZERO) > 0) {
             Transaction tx = Transaction.builder()
                     .amount(goal.getContributedAmount())
                     .type(TransactionType.INCOME)

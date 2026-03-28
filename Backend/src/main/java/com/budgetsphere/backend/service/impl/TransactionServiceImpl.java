@@ -9,6 +9,8 @@ import com.budgetsphere.backend.entity.User;
 import com.budgetsphere.backend.mapper.TransactionMapper;
 import com.budgetsphere.backend.repository.TransactionRepository;
 import com.budgetsphere.backend.repository.UserRepository;
+import com.budgetsphere.backend.exception.BusinessException;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,7 +33,7 @@ public class TransactionServiceImpl implements TransactionService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
     }
 
     @Override
@@ -65,7 +67,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public TransactionDto update(Long id, TransactionRequest request) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction", id));
         transaction.setAmount(request.getAmount());
         transaction.setType(request.getType());
         transaction.setDate(request.getDate());

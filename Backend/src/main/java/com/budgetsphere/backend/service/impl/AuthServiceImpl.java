@@ -9,6 +9,7 @@ import com.budgetsphere.backend.entity.User;
 import com.budgetsphere.backend.mapper.UserMapper;
 import com.budgetsphere.backend.repository.UserRepository;
 import com.budgetsphere.backend.security.JwtService;
+import com.budgetsphere.backend.exception.BusinessException;
 import com.budgetsphere.backend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Cet email est déjà utilisé");
+            throw new BusinessException("Cet email est déjà utilisé");
         }
         User user = User.builder()
                 .email(request.getEmail())
@@ -58,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
         String token = jwtService.generateToken(user);
         UserDto userDto = userMapper.toDto(user);
         return AuthResponse.builder()

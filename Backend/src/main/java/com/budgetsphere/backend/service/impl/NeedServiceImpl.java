@@ -9,6 +9,8 @@ import com.budgetsphere.backend.entity.User;
 import com.budgetsphere.backend.mapper.NeedMapper;
 import com.budgetsphere.backend.repository.NeedRepository;
 import com.budgetsphere.backend.repository.UserRepository;
+import com.budgetsphere.backend.exception.BusinessException;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.service.NeedService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,7 +31,7 @@ public class NeedServiceImpl implements NeedService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
     }
 
     @Override
@@ -59,7 +61,7 @@ public class NeedServiceImpl implements NeedService {
     @Override
     public NeedDto update(Long id, NeedRequest request) {
         Need need = needRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Need not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Need", id));
         need.setTitle(request.getTitle());
         need.setEstimatedPrice(request.getEstimatedPrice());
         need.setStatus(request.getStatus());
@@ -70,7 +72,7 @@ public class NeedServiceImpl implements NeedService {
     @Override
     public NeedDto updateStatus(Long id, NeedStatus status) {
         Need need = needRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Need not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Need", id));
         need.setStatus(status);
         return needMapper.toDto(needRepository.save(need));
     }

@@ -7,6 +7,8 @@ import com.budgetsphere.backend.entity.VariableExpense;
 import com.budgetsphere.backend.mapper.VariableExpenseMapper;
 import com.budgetsphere.backend.repository.UserRepository;
 import com.budgetsphere.backend.repository.VariableExpenseRepository;
+import com.budgetsphere.backend.exception.BusinessException;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.service.VariableExpenseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,7 +31,7 @@ public class VariableExpenseServiceImpl implements VariableExpenseService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
     }
 
     @Override
@@ -52,7 +54,7 @@ public class VariableExpenseServiceImpl implements VariableExpenseService {
     @Override
     public VariableExpenseDto update(Long id, VariableExpenseRequest request) {
         VariableExpense expense = variableExpenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Variable expense not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("VariableExpense", id));
         expense.setTitle(request.getTitle());
         expense.setAmount(request.getAmount());
         expense.setDescription(request.getDescription());

@@ -6,6 +6,8 @@ import com.budgetsphere.backend.entity.Role;
 import com.budgetsphere.backend.entity.User;
 import com.budgetsphere.backend.mapper.UserMapper;
 import com.budgetsphere.backend.repository.UserRepository;
+import com.budgetsphere.backend.exception.BusinessException;
+import com.budgetsphere.backend.exception.ResourceNotFoundException;
 import com.budgetsphere.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,7 +31,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto toggleUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
         user.setEnabled(!user.isEnabled());
         return userMapper.toDto(userRepository.save(user));
     }
@@ -37,7 +39,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto createAdmin(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new BusinessException("Email already exists");
         }
         User user = User.builder()
                 .email(request.getEmail())
@@ -57,7 +59,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto changeRole(Long id, String role) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
         user.setRole(Role.valueOf(role.toUpperCase()));
         return userMapper.toDto(userRepository.save(user));
     }
