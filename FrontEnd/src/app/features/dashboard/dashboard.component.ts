@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
@@ -8,222 +8,215 @@ import { SavingGoalService } from '../../core/services/saving-goal.service';
 import { Transaction, SavingGoal } from '../../core/models/models';
 import { forkJoin } from 'rxjs';
 
-declare var Chart: any;
+const CAT_LABELS: Record<string, string> = {
+  SALARY: 'Salaire', FOOD: 'Alimentation', TRANSPORT: 'Transport', HEALTH: 'Santé',
+  ENTERTAINMENT: 'Loisirs', EDUCATION: 'Éducation', SHOPPING: 'Shopping',
+  HOUSING: 'Logement', SAVINGS: 'Épargne', OTHER: 'Autre'
+};
+const CAT_ICONS: Record<string, string> = {
+  SALARY: '💰', FOOD: '🛒', TRANSPORT: '🚗', HEALTH: '💊',
+  ENTERTAINMENT: '🎬', EDUCATION: '📚', SHOPPING: '🛍️', HOUSING: '🏠', SAVINGS: '🏦', OTHER: '📦'
+};
+const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#eab308', '#22c55e', '#ef4444', '#06b6d4', '#f97316'];
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterLink, SidebarComponent],
-  template: `
-    <div class="min-h-screen" style="background:#0f172a;color:#f1f5f9;font-family:'Inter',sans-serif">
-      <app-sidebar />
-      <main class="lg:ml-64 p-6 min-h-screen">
-
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-8 mt-8 lg:mt-0">
-          <div>
-            <h1 class="text-2xl font-bold" style="color:#f1f5f9">Bonjour, {{ user?.firstName }} 👋</h1>
-            <p class="text-sm mt-1" style="color:#94a3b8">Voici un aperçu de vos finances</p>
-          </div>
-          <span class="text-sm" style="color:#94a3b8">{{ currentDate }}</span>
-        </div>
-
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm" style="color:#94a3b8">Revenus (mois)</span>
-              <span class="badge badge-green">INCOME</span>
-            </div>
-            <p class="text-3xl font-bold" style="color:#4ade80">{{ totalIncome | number:'1.0-0' }} €</p>
-            <p class="text-xs mt-2" style="color:#64748b">Total des revenus</p>
-          </div>
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm" style="color:#94a3b8">Dépenses (mois)</span>
-              <span class="badge badge-red">EXPENSE</span>
-            </div>
-            <p class="text-3xl font-bold" style="color:#f87171">{{ totalExpense | number:'1.0-0' }} €</p>
-            <p class="text-xs mt-2" style="color:#64748b">Total des dépenses</p>
-          </div>
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm" style="color:#94a3b8">Solde</span>
-              <span class="badge badge-blue">NET</span>
-            </div>
-            <p class="text-3xl font-bold" [style.color]="balance >= 0 ? '#818cf8' : '#f87171'">{{ balance | number:'1.0-0' }} €</p>
-            <p class="text-xs mt-2" style="color:#64748b">Revenus - Dépenses</p>
-          </div>
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm" style="color:#94a3b8">Objectifs</span>
-              <span class="badge badge-yellow">ÉPARGNE</span>
-            </div>
-            <p class="text-3xl font-bold" style="color:#facc15">{{ savingGoals.length }}</p>
-            <p class="text-xs mt-2" style="color:#64748b">Objectifs actifs</p>
-          </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-          <div class="card p-5 xl:col-span-2">
-            <h2 class="font-semibold mb-4" style="color:#f1f5f9">Revenus vs Dépenses</h2>
-            <canvas id="lineChart" height="120"></canvas>
-          </div>
-          <div class="card p-5">
-            <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition Dépenses</h2>
-            <canvas id="donutChart" height="180"></canvas>
-            <div class="mt-4 space-y-2">
-              <div *ngFor="let cat of categoryData" class="flex items-center justify-between text-xs">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full inline-block" [style.background]="cat.color"></span>
-                  <span style="color:#94a3b8">{{ cat.label }}</span>
-                </div>
-                <span class="font-medium" style="color:#f1f5f9">{{ cat.percentage }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom Row -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="font-semibold" style="color:#f1f5f9">Transactions Récentes</h2>
-              <a routerLink="/transactions" class="text-xs" style="color:#818cf8">Voir tout</a>
-            </div>
-            <div class="space-y-3">
-              <div *ngIf="transactions.length === 0" class="text-sm text-center py-4" style="color:#64748b">Aucune transaction</div>
-              <div *ngFor="let tx of transactions" class="flex items-center gap-3 p-3 rounded-xl cursor-pointer" style="transition:background 0.2s" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='transparent'">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                     [style.background]="tx.type === 'INCOME' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'">
-                  {{ tx.type === 'INCOME' ? '💰' : '💸' }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium" style="color:#f1f5f9">{{ tx.description || tx.category }}</p>
-                  <p class="text-xs" style="color:#64748b">{{ tx.category }} · {{ tx.date | date:'dd MMM' }}</p>
-                </div>
-                <span class="font-semibold text-sm" [style.color]="tx.type === 'INCOME' ? '#4ade80' : '#f87171'">
-                  {{ tx.type === 'INCOME' ? '+' : '-' }}{{ tx.amount | number:'1.0-0' }} €
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="font-semibold" style="color:#f1f5f9">Objectifs d'Épargne</h2>
-              <a routerLink="/savings" class="text-xs" style="color:#818cf8">Gérer</a>
-            </div>
-            <div class="space-y-4">
-              <div *ngIf="savingGoals.length === 0" class="text-sm text-center py-4" style="color:#64748b">Aucun objectif</div>
-              <div *ngFor="let goal of savingGoals">
-                <div class="flex justify-between text-sm mb-1.5">
-                  <span class="font-medium" style="color:#f1f5f9">{{ goal.title }}</span>
-                  <span style="color:#94a3b8">{{ goal.currentAmount | number:'1.0-0' }} € / {{ goal.targetAmount | number:'1.0-0' }} €</span>
-                </div>
-                <div class="h-2 rounded-full overflow-hidden" style="background:#334155">
-                  <div class="h-full rounded-full" style="background:#6366f1;transition:width 0.3s" [style.width.%]="goal.progressPercentage"></div>
-                </div>
-                <p class="text-xs mt-1" style="color:#64748b">{{ goal.progressPercentage | number:'1.0-0' }}% atteint</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </main>
-    </div>
-  `,
+  templateUrl: './dashboard.component.html',
   styles: [`
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
-    .badge { padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
-    .badge-green { background: rgba(34,197,94,0.15); color: #22c55e; }
-    .badge-red { background: rgba(239,68,68,0.15); color: #ef4444; }
-    .badge-blue { background: rgba(99,102,241,0.15); color: #6366f1; }
-    .badge-yellow { background: rgba(234,179,8,0.15); color: #eab308; }
+    .card { background:#1e293b; border:1px solid #334155; border-radius:16px; }
+    .badge { padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:500; }
+    .badge-green { background:rgba(34,197,94,0.15); color:#22c55e; }
+    .badge-red { background:rgba(239,68,68,0.15); color:#ef4444; }
+    .badge-blue { background:rgba(99,102,241,0.15); color:#6366f1; }
+    .badge-yellow { background:rgba(234,179,8,0.15); color:#eab308; }
+    .badge-purple { background:rgba(168,85,247,0.15); color:#a855f7; }
   `]
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private transactionService = inject(TransactionService);
   private savingGoalService = inject(SavingGoalService);
+  private cdr = inject(ChangeDetectorRef);
 
   user = this.authService.getUser();
   currentDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Data
+  allTransactions: Transaction[] = [];
   transactions: Transaction[] = [];
   savingGoals: SavingGoal[] = [];
+
+  // KPIs
   totalIncome = 0;
   totalExpense = 0;
   balance = 0;
-  categoryData: { label: string; percentage: number; color: string }[] = [];
-  private chartInstances: any[] = [];
+  savingsRate = 0;
+  incomeCount = 0;
+  expenseCount = 0;
+  achievedGoals = 0;
+  totalSaved = 0;
+
+  // Month comparison
+  currentMonthIncome = 0;
+  currentMonthExpense = 0;
+  prevMonthIncome = 0;
+  prevMonthExpense = 0;
+  incomeEvolution = 0;
+  expenseEvolution = 0;
+
+  // Charts data
+  categoryData: { label: string; percentage: number; amount: number; color: string }[] = [];
+  monthlyTrend: { label: string; income: number; expense: number }[] = [];
+
+  private charts: any[] = [];
 
   ngOnInit() {
     forkJoin({
-      stats: this.transactionService.getStats(),
-      recent: this.transactionService.getAll(0, 5),
-      goals: this.savingGoalService.getAll(0, 3)
-    }).subscribe(({ stats, recent, goals }) => {
-      this.totalIncome = stats.totalIncome;
-      this.totalExpense = stats.totalExpense;
-      this.balance = stats.balance;
-      this.transactions = recent.content;
-      this.savingGoals = goals.content;
-      this.buildCategoryData(recent.content);
-      setTimeout(() => this.initCharts(), 0);
+      transactions: this.transactionService.getAll(0, 500),
+      goals: this.savingGoalService.getAll(0, 10)
+    }).subscribe({
+      next: ({ transactions, goals }) => {
+        console.log('transactions reçues:', transactions);
+        console.log('premier élément:', transactions.content[0]);
+        this.allTransactions = transactions.content;
+        this.transactions = transactions.content.slice(0, 5);
+        this.savingGoals = goals.content;
+        this.compute();
+        console.log('totalIncome:', this.totalIncome, 'totalExpense:', this.totalExpense);
+        this.cdr.detectChanges();
+        setTimeout(() => this.initCharts(), 0);
+      },
+      error: () => {}
     });
   }
 
-  ngAfterViewInit() {}
+  ngOnDestroy() { this.charts.forEach(c => c.destroy()); }
 
-  buildCategoryData(transactions: Transaction[]) {
-    const expenses = transactions.filter(t => t.type === 'EXPENSE');
-    const total = expenses.reduce((s, t) => s + t.amount, 0);
-    const colors = ['#6366f1', '#a855f7', '#ec4899', '#eab308', '#22c55e', '#ef4444'];
+  compute() {
+    const all = this.allTransactions;
+    const now = new Date();
+    const curMonth = now.getMonth();
+    const curYear = now.getFullYear();
+    const prevMonth = curMonth === 0 ? 11 : curMonth - 1;
+    const prevYear = curMonth === 0 ? curYear - 1 : curYear;
+
+    // Totaux globaux
+    this.totalIncome = all.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+    this.totalExpense = all.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
+    this.balance = this.totalIncome - this.totalExpense;
+    this.savingsRate = this.totalIncome > 0 ? Math.round((this.balance / this.totalIncome) * 100) : 0;
+    this.incomeCount = all.filter(t => t.type === 'INCOME').length;
+    this.expenseCount = all.filter(t => t.type === 'EXPENSE').length;
+    this.achievedGoals = this.savingGoals.filter(g => g.isAchieved).length;
+    this.totalSaved = this.savingGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
+
+    // Mois actuel vs précédent
+    const inMonth = (t: Transaction, m: number, y: number) => {
+      const parts = t.date.toString().split('-');
+      return parseInt(parts[1]) - 1 === m && parseInt(parts[0]) === y;
+    };
+    this.currentMonthIncome = all.filter(t => t.type === 'INCOME' && inMonth(t, curMonth, curYear)).reduce((s, t) => s + Number(t.amount), 0);
+    this.currentMonthExpense = all.filter(t => t.type === 'EXPENSE' && inMonth(t, curMonth, curYear)).reduce((s, t) => s + Number(t.amount), 0);
+    this.prevMonthIncome = all.filter(t => t.type === 'INCOME' && inMonth(t, prevMonth, prevYear)).reduce((s, t) => s + Number(t.amount), 0);
+    this.prevMonthExpense = all.filter(t => t.type === 'EXPENSE' && inMonth(t, prevMonth, prevYear)).reduce((s, t) => s + Number(t.amount), 0);
+    this.incomeEvolution = this.prevMonthIncome > 0 ? Math.round(((this.currentMonthIncome - this.prevMonthIncome) / this.prevMonthIncome) * 100) : 0;
+    this.expenseEvolution = this.prevMonthExpense > 0 ? Math.round(((this.currentMonthExpense - this.prevMonthExpense) / this.prevMonthExpense) * 100) : 0;
+
+    // Catégories
+    const expenses = all.filter(t => t.type === 'EXPENSE');
+    const total = expenses.reduce((s, t) => s + Number(t.amount), 0);
     const grouped: Record<string, number> = {};
-    expenses.forEach(t => { grouped[t.category] = (grouped[t.category] || 0) + t.amount; });
-    this.categoryData = Object.entries(grouped).map(([label, amount], i) => ({
-      label,
-      percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
-      color: colors[i % colors.length]
-    }));
+    expenses.forEach(t => { grouped[t.category] = (grouped[t.category] || 0) + Number(t.amount); });
+    this.categoryData = Object.entries(grouped)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, amount], i) => ({
+        label: CAT_LABELS[cat] || cat,
+        amount,
+        percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
+        color: COLORS[i % COLORS.length]
+      }));
+
+    // Tendance 6 mois
+    this.monthlyTrend = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(curYear, curMonth - (5 - i), 1);
+      const m = d.getMonth(), y = d.getFullYear();
+      return {
+        label: d.toLocaleDateString('fr-FR', { month: 'short' }),
+        income: all.filter(t => t.type === 'INCOME' && inMonth(t, m, y)).reduce((s, t) => s + Number(t.amount), 0),
+        expense: all.filter(t => t.type === 'EXPENSE' && inMonth(t, m, y)).reduce((s, t) => s + Number(t.amount), 0)
+      };
+    });
   }
 
   initCharts() {
-    this.chartInstances.forEach(c => c.destroy());
-    this.chartInstances = [];
-    const lineEl = document.getElementById('lineChart') as HTMLCanvasElement;
-    const donutEl = document.getElementById('donutChart') as HTMLCanvasElement;
-    if (!lineEl || !donutEl) return;
+    this.charts.forEach(c => c.destroy());
+    this.charts = [];
+    const win = window as any;
+    if (!win.Chart) return;
 
-    this.chartInstances.push(new Chart(lineEl.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: ['Revenus', 'Dépenses', 'Solde'],
-        datasets: [{
-          data: [this.totalIncome, this.totalExpense, Math.abs(this.balance)],
-          backgroundColor: ['rgba(34,197,94,0.7)', 'rgba(239,68,68,0.7)', 'rgba(99,102,241,0.7)'],
-          borderRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
-          y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+    // Chart tendance 6 mois
+    const trendEl = document.getElementById('trendChart') as HTMLCanvasElement;
+    if (trendEl) {
+      this.charts.push(new win.Chart(trendEl.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: this.monthlyTrend.map(m => m.label),
+          datasets: [
+            { label: 'Revenus', data: this.monthlyTrend.map(m => m.income), borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#4ade80' },
+            { label: 'Dépenses', data: this.monthlyTrend.map(m => m.expense), borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#f87171' }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+          }
         }
-      }
-    }));
+      }));
+    }
 
-    const labels = this.categoryData.length ? this.categoryData.map(c => c.label) : ['Aucune dépense'];
-    const data = this.categoryData.length ? this.categoryData.map(c => c.percentage) : [100];
-    const colors = this.categoryData.length ? this.categoryData.map(c => c.color) : ['#334155'];
+    // Chart donut catégories
+    const donutEl = document.getElementById('donutChart') as HTMLCanvasElement;
+    if (donutEl && this.categoryData.length > 0) {
+      this.charts.push(new win.Chart(donutEl.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: this.categoryData.map(c => c.label),
+          datasets: [{ data: this.categoryData.map(c => c.percentage), backgroundColor: this.categoryData.map(c => c.color), borderWidth: 0, hoverOffset: 8 }]
+        },
+        options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+      }));
+    }
 
-    this.chartInstances.push(new Chart(donutEl.getContext('2d'), {
-      type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
-      options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
-    }));
+    // Chart bar mois actuel
+    const barEl = document.getElementById('barChart') as HTMLCanvasElement;
+    if (barEl) {
+      this.charts.push(new win.Chart(barEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Revenus', 'Dépenses', 'Solde'],
+          datasets: [{
+            data: [this.currentMonthIncome, this.currentMonthExpense, Math.max(0, this.currentMonthIncome - this.currentMonthExpense)],
+            backgroundColor: ['rgba(74,222,128,0.8)', 'rgba(248,113,113,0.8)', 'rgba(99,102,241,0.8)'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { display: false } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+          }
+        }
+      }));
+    }
   }
+
+  getLabel(cat: string) { return CAT_LABELS[cat] || cat; }
+  getIcon(cat: string) { return CAT_ICONS[cat] || '📦'; }
 }

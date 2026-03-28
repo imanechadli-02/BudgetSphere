@@ -1,0 +1,217 @@
+<div class="min-h-screen" style="background:#0f172a;color:#f1f5f9;font-family:'Inter',sans-serif">
+  <app-sidebar />
+  <main class="lg:ml-64 p-6 min-h-screen">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8 mt-8 lg:mt-0">
+      <div>
+        <h1 class="text-2xl font-bold" style="color:#f1f5f9">Bonjour, {{ user?.firstName }} 👋</h1>
+        <p class="text-sm mt-1" style="color:#94a3b8">Voici un aperçu complet de vos finances</p>
+      </div>
+      <span class="text-sm hidden sm:block" style="color:#94a3b8">{{ currentDate }}</span>
+    </div>
+
+    <!-- KPI Row 1 : globaux -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs" style="color:#94a3b8">Total Revenus</span>
+          <span class="badge badge-green">INCOME</span>
+        </div>
+        <p class="text-2xl font-bold" style="color:#4ade80">{{ totalIncome | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#64748b">{{ incomeCount }} transaction(s)</p>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs" style="color:#94a3b8">Total Dépenses</span>
+          <span class="badge badge-red">EXPENSE</span>
+        </div>
+        <p class="text-2xl font-bold" style="color:#f87171">{{ totalExpense | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#64748b">{{ expenseCount }} transaction(s)</p>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs" style="color:#94a3b8">Solde Net</span>
+          <span class="badge badge-blue">NET</span>
+        </div>
+        <p class="text-2xl font-bold" [style.color]="balance >= 0 ? '#818cf8' : '#f87171'">{{ balance | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#64748b">Revenus - Dépenses</p>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs" style="color:#94a3b8">Taux d'Épargne</span>
+          <span class="badge badge-purple">ÉPARGNE</span>
+        </div>
+        <p class="text-2xl font-bold" [style.color]="savingsRate >= 20 ? '#4ade80' : savingsRate >= 0 ? '#facc15' : '#f87171'">{{ savingsRate }}%</p>
+        <p class="text-xs mt-1" style="color:#64748b">du revenu total</p>
+      </div>
+    </div>
+
+    <!-- KPI Row 2 : mois actuel -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5">
+        <p class="text-xs mb-2" style="color:#94a3b8">Revenus ce mois</p>
+        <p class="text-2xl font-bold" style="color:#4ade80">{{ currentMonthIncome | number:'1.0-0' }} €</p>
+        <div class="flex items-center gap-1 mt-1">
+          <span class="text-xs" [style.color]="incomeEvolution >= 0 ? '#4ade80' : '#f87171'">
+            {{ incomeEvolution >= 0 ? '▲' : '▼' }} {{ incomeEvolution | number:'1.0-0' }}%
+          </span>
+          <span class="text-xs" style="color:#475569">vs mois dernier</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs mb-2" style="color:#94a3b8">Dépenses ce mois</p>
+        <p class="text-2xl font-bold" style="color:#f87171">{{ currentMonthExpense | number:'1.0-0' }} €</p>
+        <div class="flex items-center gap-1 mt-1">
+          <span class="text-xs" [style.color]="expenseEvolution <= 0 ? '#4ade80' : '#f87171'">
+            {{ expenseEvolution >= 0 ? '▲' : '▼' }} {{ expenseEvolution | number:'1.0-0' }}%
+          </span>
+          <span class="text-xs" style="color:#475569">vs mois dernier</span>
+        </div>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs mb-2" style="color:#94a3b8">Objectifs d'Épargne</p>
+        <p class="text-2xl font-bold" style="color:#facc15">{{ savingGoals.length }}</p>
+        <p class="text-xs mt-1" style="color:#64748b">{{ achievedGoals }} atteint(s)</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs mb-2" style="color:#94a3b8">Total Épargné</p>
+        <p class="text-2xl font-bold" style="color:#818cf8">{{ totalSaved | number:'1.0-0' }} €</p>
+        <p class="text-xs mt-1" style="color:#64748b">dans tous les objectifs</p>
+      </div>
+    </div>
+
+    <!-- Barre santé financière -->
+    <div class="card p-5 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-sm" style="color:#f1f5f9">Santé Financière</h2>
+        <span class="text-sm font-bold" [style.color]="savingsRate >= 20 ? '#4ade80' : savingsRate >= 0 ? '#facc15' : '#f87171'">
+          {{ savingsRate >= 20 ? '🟢 Bonne' : savingsRate >= 0 ? '🟡 Correcte' : '🔴 Déficitaire' }}
+        </span>
+      </div>
+      <div class="h-3 rounded-full overflow-hidden mb-2" style="background:#334155">
+        <div class="h-full rounded-full transition-all duration-700"
+          [style.width.%]="totalIncome > 0 ? (totalExpense / totalIncome) * 100 : 0"
+          [style.background]="(totalExpense / totalIncome) >= 1 ? '#ef4444' : (totalExpense / totalIncome) >= 0.8 ? '#facc15' : '#6366f1'">
+        </div>
+      </div>
+      <div class="flex justify-between text-xs" style="color:#64748b">
+        <span>Dépenses : {{ totalExpense | number:'1.0-0' }} €</span>
+        <span>Revenus : {{ totalIncome | number:'1.0-0' }} €</span>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+
+      <!-- Tendance 6 mois -->
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Évolution sur 6 mois</h2>
+        <div *ngIf="allTransactions.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune donnée</div>
+        <canvas *ngIf="allTransactions.length > 0" id="trendChart" height="110"></canvas>
+      </div>
+
+      <!-- Donut catégories -->
+      <div class="card p-5">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Répartition Dépenses</h2>
+        <div *ngIf="categoryData.length === 0" class="flex items-center justify-center h-32 text-sm" style="color:#475569">Aucune dépense</div>
+        <canvas *ngIf="categoryData.length > 0" id="donutChart" height="160"></canvas>
+        <div class="mt-3 space-y-1.5">
+          <div *ngFor="let cat of categoryData.slice(0,5)" class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full inline-block flex-shrink-0" [style.background]="cat.color"></span>
+              <span style="color:#94a3b8">{{ cat.label }}</span>
+            </div>
+            <span class="font-medium" style="color:#f1f5f9">{{ cat.percentage }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar mois actuel + Top catégories -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Ce mois-ci</h2>
+        <canvas id="barChart" height="160"></canvas>
+      </div>
+
+      <!-- Top dépenses par catégorie -->
+      <div class="card p-5 xl:col-span-2">
+        <h2 class="font-semibold mb-4" style="color:#f1f5f9">Top Catégories de Dépenses</h2>
+        <div *ngIf="categoryData.length === 0" class="text-sm text-center py-4" style="color:#64748b">Aucune dépense</div>
+        <div class="space-y-3">
+          <div *ngFor="let cat of categoryData.slice(0,5)">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm" style="color:#f1f5f9">{{ cat.label }}</span>
+              <span class="text-sm font-semibold" style="color:#f87171">{{ cat.amount | number:'1.0-0' }} €</span>
+            </div>
+            <div class="h-2 rounded-full overflow-hidden" style="background:#334155">
+              <div class="h-full rounded-full transition-all duration-500" [style.width.%]="cat.percentage" [style.background]="cat.color"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+
+      <!-- Transactions récentes -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold" style="color:#f1f5f9">Transactions Récentes</h2>
+          <a routerLink="/transactions" class="text-xs" style="color:#818cf8">Voir tout</a>
+        </div>
+        <div class="space-y-2">
+          <div *ngIf="transactions.length === 0" class="text-sm text-center py-4" style="color:#64748b">Aucune transaction</div>
+          <div *ngFor="let tx of transactions" class="flex items-center gap-3 p-3 rounded-xl"
+               style="transition:background 0.2s"
+               onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+               onmouseout="this.style.background='transparent'">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0"
+                 [style.background]="tx.type === 'INCOME' ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)'">
+              {{ getIcon(tx.category) }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" style="color:#f1f5f9">{{ tx.description || getLabel(tx.category) }}</p>
+              <p class="text-xs" style="color:#64748b">{{ getLabel(tx.category) }} · {{ tx.date | date:'dd MMM' }}</p>
+            </div>
+            <span class="font-semibold text-sm flex-shrink-0" [style.color]="tx.type === 'INCOME' ? '#4ade80' : '#f87171'">
+              {{ tx.type === 'INCOME' ? '+' : '-' }}{{ tx.amount | number:'1.0-0' }} €
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Objectifs d'épargne -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold" style="color:#f1f5f9">Objectifs d'Épargne</h2>
+          <a routerLink="/savings" class="text-xs" style="color:#818cf8">Gérer</a>
+        </div>
+        <div class="space-y-4">
+          <div *ngIf="savingGoals.length === 0" class="text-sm text-center py-4" style="color:#64748b">Aucun objectif</div>
+          <div *ngFor="let goal of savingGoals">
+            <div class="flex justify-between text-sm mb-1.5">
+              <div class="flex items-center gap-2">
+                <span *ngIf="goal.isAchieved" class="text-xs">✅</span>
+                <span class="font-medium" style="color:#f1f5f9">{{ goal.title }}</span>
+              </div>
+              <span style="color:#94a3b8">{{ goal.currentAmount | number:'1.0-0' }} / {{ goal.targetAmount | number:'1.0-0' }} €</span>
+            </div>
+            <div class="h-2 rounded-full overflow-hidden" style="background:#334155">
+              <div class="h-full rounded-full" [style.width.%]="goal.progressPercentage"
+                   [style.background]="goal.isAchieved ? '#4ade80' : '#6366f1'"
+                   style="transition:width 0.5s"></div>
+            </div>
+            <div class="flex justify-between text-xs mt-1" style="color:#64748b">
+              <span>{{ goal.progressPercentage | number:'1.0-0' }}% atteint</span>
+              <span *ngIf="!goal.isAchieved">{{ goal.remainingAmount | number:'1.0-0' }} € restants</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

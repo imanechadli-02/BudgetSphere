@@ -14,7 +14,7 @@ export interface AuthResponse {
 
 export interface Transaction {
   id: number;
-  amount: number;
+  amount: any;
   type: 'INCOME' | 'EXPENSE';
   date: string;
   description: string;
