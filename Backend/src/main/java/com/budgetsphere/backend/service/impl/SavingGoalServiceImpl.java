@@ -94,7 +94,7 @@ public class SavingGoalServiceImpl implements SavingGoalService {
         SavingGoal goal = savingGoalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SavingGoal", id));
 
-        if (goal.getContributedAmount()).compareTo(BigDecimal.ZERO) > 0) {
+        if (goal.getContributedAmount().compareTo(BigDecimal.ZERO) > 0) {
             Transaction tx = Transaction.builder()
                     .amount(goal.getContributedAmount())
                     .type(TransactionType.INCOME)
