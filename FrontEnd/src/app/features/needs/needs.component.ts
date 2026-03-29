@@ -51,8 +51,8 @@ export class NeedsComponent implements OnInit {
 
   ngOnInit() { this.load(); }
 
-  load() {
-    this.loading = true;
+  load(silent = false) {
+    if (!silent) this.loading = true;
     this.needService.getAll().subscribe({
       next: res => { this.needs = res.content ?? []; this.loading = false; this.applyFilters(); },
       error: () => { this.loading = false; this.cdr.detectChanges(); }
@@ -93,16 +93,10 @@ export class NeedsComponent implements OnInit {
     const payload = { ...this.form, estimatedPrice: parseFloat(this.form.estimatedPrice) };
     const req = this.editId ? this.needService.update(this.editId, payload) : this.needService.create(payload);
     req.subscribe({
-      next: (saved: Need) => {
-        if (this.editId) {
-          const idx = this.needs.findIndex(n => n.id === this.editId);
-          if (idx !== -1) this.needs[idx] = saved;
-        } else {
-          this.needs = [saved, ...this.needs];
-        }
+      next: () => {
         this.saving = false;
         this.showModal = false;
-        this.applyFilters();
+        this.load(true);
       },
       error: (err) => {
         this.formError = err.error?.message || 'Une erreur est survenue';
@@ -114,10 +108,7 @@ export class NeedsComponent implements OnInit {
 
   deleteNeed(id: number) {
     if (!confirm('Supprimer ce besoin ?')) return;
-    this.needService.delete(id).subscribe(() => {
-      this.needs = this.needs.filter(n => n.id !== id);
-      this.applyFilters();
-    });
+    this.needService.delete(id).subscribe(() => this.load(true));
   }
 
   cycleStatus(n: Need) {

@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { VariableExpense, PageResponse } from '../models/models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class VariableExpenseService {
-  private apiUrl = 'http://localhost:8080/api/user/expenses/variable';
+  private apiUrl = `${environment.apiUrl}/api/user/expenses/variable`;
 
   constructor(private http: HttpClient) {}
 

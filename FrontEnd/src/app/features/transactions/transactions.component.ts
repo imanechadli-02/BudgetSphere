@@ -3,18 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionService } from '../../core/services/transaction.service';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
-import { Transaction } from '../../core/models/models';
-
-const CATEGORY_LABELS: Record<string, string> = {
-  SALARY: 'Salaire', FOOD: 'Alimentation', TRANSPORT: 'Transport',
-  HEALTH: 'Santé', ENTERTAINMENT: 'Loisirs', EDUCATION: 'Éducation',
-  SHOPPING: 'Shopping', HOUSING: 'Logement', SAVINGS: 'Épargne', OTHER: 'Autre'
-};
-const CATEGORY_ICONS: Record<string, string> = {
-  SALARY: '💰', FOOD: '🛒', TRANSPORT: '🚗', HEALTH: '💊',
-  ENTERTAINMENT: '🎬', EDUCATION: '📚', SHOPPING: '🛍️', HOUSING: '🏠',
-  SAVINGS: '🏦', OTHER: '📦'
-};
+import { Transaction, CATEGORY_LABELS, CATEGORY_ICONS } from '../../core/models/models';
 
 @Component({
   selector: 'app-transactions',
@@ -64,13 +53,11 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
-  load() { this.loadStats(); this.loadPage(); }
-
-  loadPage() {
-    this.loading = true;
-    this.txService.getAll(this.currentPage - 1, this.PAGE_SIZE, this.filterType || undefined, undefined, this.dateFrom || undefined, this.dateTo || undefined).subscribe({
+loadPage(silent = false) {
+    if (!silent) this.loading = true;
+    this.txService.getAll(this.currentPage - 1, this.PAGE_SIZE, this.filterType || undefined, this.dateFrom || undefined, this.dateTo || undefined).subscribe({
       next: res => {
-        this.pagedTransactions = res.content;
+        this.pagedTransactions = [...res.content];
         this.totalElements = res.totalElements;
         this.totalPages = res.totalPages || Math.ceil(res.totalElements / this.PAGE_SIZE) || 1;
         this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
@@ -107,18 +94,11 @@ export class TransactionsComponent implements OnInit {
     const payload = { ...this.form, amount: parseFloat(this.form.amount) };
     const req = this.editId ? this.txService.update(this.editId, payload) : this.txService.create(payload);
     req.subscribe({
-      next: (tx) => {
-        if (this.editId) {
-          const idx = this.pagedTransactions.findIndex(t => t.id === this.editId);
-          if (idx !== -1) this.pagedTransactions[idx] = tx;
-        } else {
-          this.pagedTransactions = [tx, ...this.pagedTransactions].slice(0, this.PAGE_SIZE);
-          this.totalElements++;
-        }
-        this.loadStats();
-        this.closeModal();
+      next: () => {
         this.saving = false;
-        this.cdr.detectChanges();
+        this.closeModal();
+        this.loadStats();
+        this.loadPage(true);
       },
       error: (err) => {
         this.formError = err.error?.message || 'Une erreur est survenue';
@@ -131,10 +111,8 @@ export class TransactionsComponent implements OnInit {
   deleteTx(id: number) {
     if (!confirm('Supprimer cette transaction ?')) return;
     this.txService.delete(id).subscribe(() => {
-      this.pagedTransactions = this.pagedTransactions.filter(t => t.id !== id);
-      this.totalElements--;
       this.loadStats();
-      this.cdr.detectChanges();
+      this.loadPage(true);
     });
   }
 

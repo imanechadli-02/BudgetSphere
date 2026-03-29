@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Need, PageResponse } from '../models/models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class NeedService {
-  private apiUrl = 'http://localhost:8080/api/user/needs';
+  private apiUrl = `${environment.apiUrl}/api/user/needs`;
 
   constructor(private http: HttpClient) {}
 

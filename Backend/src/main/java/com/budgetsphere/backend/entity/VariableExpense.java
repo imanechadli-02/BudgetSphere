@@ -27,8 +27,6 @@ public class VariableExpense {
 
     private String description;
 
-    private LocalDate endDate;
-
     @Column(nullable = false)
     private LocalDate expenseDate;
 

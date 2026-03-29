@@ -147,11 +147,23 @@ export class AdminComponent implements OnInit, OnDestroy {
     const roleEl = document.getElementById('roleChart') as HTMLCanvasElement;
     if (!barEl || !roleEl) return;
 
+    // Inscriptions par mois basées sur les vrais utilisateurs (répartition uniforme)
+    const totalUsers = this.users.length;
+    const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Août','Sep','Oct','Nov','Déc'];
+    const now = new Date();
+    const labels = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return months[d.getMonth()];
+    });
+    const perMonth = Math.floor(totalUsers / 6);
+    const remainder = totalUsers % 6;
+    const data = Array.from({ length: 6 }, (_, i) => perMonth + (i === 5 ? remainder : 0));
+
     this.barChart = new win.Chart(barEl.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: ['Fév','Mar','Avr','Mai','Jun','Jul','Août','Sep','Oct','Nov','Déc','Jan'],
-        datasets: [{ label: 'Inscriptions', data: [45,62,58,80,95,110,88,102,120,98,135,124], backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 }]
+        labels,
+        datasets: [{ label: 'Utilisateurs', data, backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 }]
       },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#64748b' }, grid: { display: false } }, y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } } } }
     });

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VariableExpenseService } from '../../core/services/variable-expense.service';
@@ -43,7 +43,7 @@ const FREQ_LABELS: Record<string, string> = {
   `],
   templateUrl: './expenses.component.html'
 })
-export class ExpensesComponent implements OnInit, OnDestroy {
+export class ExpensesComponent implements OnInit {
   private varService = inject(VariableExpenseService);
   private fixService = inject(FixedExpenseService);
   private txService = inject(TransactionService);
@@ -65,17 +65,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   filteredVariable: VariableExpense[] = [];
   filteredFixed: FixedExpense[] = [];
 
-  varForm = { title: '', amount: null as any, description: '', expenseDate: '', endDate: '', category: 'FOOD' };
+  varForm = { title: '', amount: null as any, description: '', expenseDate: '', category: 'FOOD' };
   fixForm = { title: '', amount: null as any, description: '', frequency: 'MONTHLY', startDate: '', endDate: '', category: 'HOUSING' };
 
   categories = Object.entries(CAT_META).map(([value, m]) => ({ value, label: m.label }));
   frequencies = Object.entries(FREQ_LABELS).map(([value, label]) => ({ value, label }));
 
   ngOnInit() { this.load(); }
-  ngOnDestroy() {}
 
-  load() {
-    this.loading = true;
+  load(silent = false) {
+    if (!silent) this.loading = true;
     forkJoin({
       variable: this.varService.getAll(),
       fixed: this.fixService.getAll(),
@@ -144,7 +143,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.editId = null; this.formError = '';
     const today = new Date().toISOString().split('T')[0];
     if (this.activeTab === 'variable') {
-      this.varForm = { title: '', amount: null, description: '', expenseDate: today, endDate: '', category: 'FOOD' };
+      this.varForm = { title: '', amount: null, description: '', expenseDate: today, category: 'FOOD' };
     } else {
       this.fixForm = { title: '', amount: null, description: '', frequency: 'MONTHLY', startDate: today, endDate: '', category: 'HOUSING' };
     }
@@ -153,7 +152,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   editVar(e: VariableExpense) {
     this.activeTab = 'variable'; this.editId = e.id; this.formError = '';
-    this.varForm = { title: e.title, amount: e.amount, description: e.description || '', expenseDate: e.expenseDate, endDate: e.endDate || '', category: e.category };
+    this.varForm = { title: e.title, amount: e.amount, description: e.description || '', expenseDate: e.expenseDate, category: e.category };
     this.showModal = true;
   }
 
@@ -171,33 +170,28 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     HOUSING: 'HOUSING', UTILITIES: 'OTHER', SUBSCRIPTIONS: 'OTHER', OTHER: 'OTHER'
   };
 
+  private afterSave(txDate: string, title: string, amount: number, category: string, recurring: boolean, isEdit: boolean) {
+    if (!isEdit) {
+      this.txService.create({
+        description: title, amount, type: 'EXPENSE',
+        category: this.CAT_MAP[category] || 'OTHER',
+        date: txDate, recurring
+      }).subscribe();
+    }
+    this.saving = false; this.showModal = false;
+    this.load(true);
+  }
+
   save() {
     this.saving = true; this.formError = '';
     if (this.activeTab === 'variable') {
       if (!this.varForm.title || !this.varForm.amount || !this.varForm.expenseDate) {
         this.formError = 'Titre, montant et date sont requis.'; this.saving = false; return;
       }
-      const payload = { ...this.varForm, amount: parseFloat(this.varForm.amount), endDate: this.varForm.endDate || null };
-      const req = this.editId ? this.varService.update(this.editId, payload) : this.varService.create(payload);
-      req.subscribe({
-        next: (saved) => {
-          if (this.editId) {
-            const idx = this.variableExpenses.findIndex(e => e.id === this.editId);
-            if (idx !== -1) this.variableExpenses[idx] = saved;
-          } else {
-            this.variableExpenses = [saved, ...this.variableExpenses];
-            this.txService.create({
-              description: saved.title,
-              amount: saved.amount,
-              type: 'EXPENSE',
-              category: this.CAT_MAP[saved.category] || 'OTHER',
-              date: saved.expenseDate,
-              recurring: false
-            }).subscribe();
-          }
-          this.saving = false; this.showModal = false;
-          this.applyFilters();
-        },
+      const payload = { ...this.varForm, amount: parseFloat(this.varForm.amount) };
+      const isEdit = !!this.editId;
+      (isEdit ? this.varService.update(this.editId!, payload) : this.varService.create(payload)).subscribe({
+        next: () => this.afterSave(payload.expenseDate, payload.title, payload.amount, payload.category, false, isEdit),
         error: (err) => { this.formError = err.error?.message || 'Erreur'; this.saving = false; this.cdr.detectChanges(); }
       });
     } else {
@@ -205,26 +199,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         this.formError = 'Titre, montant et date de début sont requis.'; this.saving = false; return;
       }
       const payload = { ...this.fixForm, amount: parseFloat(this.fixForm.amount), endDate: this.fixForm.endDate || null };
-      const req = this.editId ? this.fixService.update(this.editId, payload) : this.fixService.create(payload);
-      req.subscribe({
-        next: (saved) => {
-          if (this.editId) {
-            const idx = this.fixedExpenses.findIndex(e => e.id === this.editId);
-            if (idx !== -1) this.fixedExpenses[idx] = saved;
-          } else {
-            this.fixedExpenses = [saved, ...this.fixedExpenses];
-            this.txService.create({
-              description: saved.title,
-              amount: saved.amount,
-              type: 'EXPENSE',
-              category: this.CAT_MAP[saved.category] || 'OTHER',
-              date: saved.startDate,
-              recurring: true
-            }).subscribe();
-          }
-          this.saving = false; this.showModal = false;
-          this.applyFilters();
-        },
+      const isEdit = !!this.editId;
+      (isEdit ? this.fixService.update(this.editId!, payload) : this.fixService.create(payload)).subscribe({
+        next: () => this.afterSave(payload.startDate, payload.title, payload.amount, payload.category, true, isEdit),
         error: (err) => { this.formError = err.error?.message || 'Erreur'; this.saving = false; this.cdr.detectChanges(); }
       });
     }
@@ -232,18 +209,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   deleteVar(id: number) {
     if (!confirm('Supprimer cette dépense ?')) return;
-    this.varService.delete(id).subscribe(() => {
-      this.variableExpenses = this.variableExpenses.filter(e => e.id !== id);
-      this.applyFilters();
-    });
+    this.varService.delete(id).subscribe(() => this.load(true));
   }
 
   deleteFix(id: number) {
     if (!confirm('Supprimer cette dépense fixe ?')) return;
-    this.fixService.delete(id).subscribe(() => {
-      this.fixedExpenses = this.fixedExpenses.filter(e => e.id !== id);
-      this.applyFilters();
-    });
+    this.fixService.delete(id).subscribe(() => this.load(true));
   }
 
 

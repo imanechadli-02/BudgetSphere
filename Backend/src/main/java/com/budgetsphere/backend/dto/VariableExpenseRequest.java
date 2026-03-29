@@ -25,8 +25,6 @@ public class VariableExpenseRequest {
     @Size(max = 255, message = "Description must not exceed 255 characters")
     private String description;
 
-    private LocalDate endDate;
-
     @NotNull(message = "Expense date is required")
     @PastOrPresent(message = "Expense date cannot be in the future")
     private LocalDate expenseDate;

@@ -60,7 +60,11 @@ public class UserServiceImpl implements UserService {
     public UserDto changeRole(Long id, String role) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
-        user.setRole(Role.valueOf(role.toUpperCase()));
+        try {
+            user.setRole(Role.valueOf(role.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("Invalid role: " + role);
+        }
         return userMapper.toDto(userRepository.save(user));
     }
 }

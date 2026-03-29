@@ -21,10 +21,6 @@ public class SavingGoalRequest {
     @Positive(message = "Target amount must be positive")
     private BigDecimal targetAmount;
 
-    @NotNull(message = "Current amount is required")
-    @PositiveOrZero(message = "Current amount must be positive or zero")
-    private BigDecimal currentAmount;
-
     @NotNull(message = "Deadline is required")
     private LocalDate deadline;
 

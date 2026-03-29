@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { FixedExpense, PageResponse } from '../models/models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class FixedExpenseService {
-  private apiUrl = 'http://localhost:8080/api/user/expenses/fixed';
+  private apiUrl = `${environment.apiUrl}/api/user/expenses/fixed`;
 
   constructor(private http: HttpClient) {}
 

@@ -17,19 +17,19 @@ public class SavingGoalMapper {
         LocalDate today = LocalDate.now();
 
         double progress = goal.getTargetAmount().doubleValue() > 0
-                ? (goal.getCurrentAmount().doubleValue() / goal.getTargetAmount().doubleValue()) * 100
+                ? (goal.getContributedAmount().doubleValue() / goal.getTargetAmount().doubleValue()) * 100
                 : 0;
 
-        BigDecimal remaining = goal.getTargetAmount().subtract(goal.getCurrentAmount());
+        BigDecimal remaining = goal.getTargetAmount().subtract(goal.getContributedAmount());
         long daysRemaining = Math.max(ChronoUnit.DAYS.between(today, goal.getDeadline()), 0);
         long monthsRemaining = Math.max(ChronoUnit.MONTHS.between(today, goal.getDeadline()), 0);
-        boolean isAchieved = goal.getCurrentAmount().compareTo(goal.getTargetAmount()) >= 0;
+        boolean isAchieved = goal.getContributedAmount().compareTo(goal.getTargetAmount()) >= 0;
 
         return SavingGoalDto.builder()
                 .id(goal.getId())
                 .title(goal.getTitle())
                 .targetAmount(goal.getTargetAmount())
-                .currentAmount(goal.getCurrentAmount())
+                .contributedAmount(goal.getContributedAmount())
                 .remainingAmount(remaining.max(BigDecimal.ZERO))
                 .deadline(goal.getDeadline())
                 .monthlyContribution(goal.getMonthlyContribution())
@@ -45,9 +45,10 @@ public class SavingGoalMapper {
         return SavingGoal.builder()
                 .title(request.getTitle())
                 .targetAmount(request.getTargetAmount())
-                .currentAmount(request.getCurrentAmount())
                 .deadline(request.getDeadline())
                 .monthlyContribution(request.getMonthlyContribution())
+                .contributedAmount(BigDecimal.ZERO)
+                .currentAmount(BigDecimal.ZERO)
                 .user(user)
                 .build();
     }

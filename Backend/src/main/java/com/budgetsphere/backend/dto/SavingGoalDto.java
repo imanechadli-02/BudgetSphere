@@ -14,7 +14,7 @@ public class SavingGoalDto {
     private Long id;
     private String title;
     private BigDecimal targetAmount;
-    private BigDecimal currentAmount;
+    private BigDecimal contributedAmount;
     private BigDecimal remainingAmount;
     private LocalDate deadline;
     private BigDecimal monthlyContribution;

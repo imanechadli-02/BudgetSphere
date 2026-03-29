@@ -48,18 +48,17 @@
     <!-- Filters -->
     <div class="card p-4 mb-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <select [(ngModel)]="filterType" (ngModelChange)="applyFilters()" class="input-field">
+        <select [(ngModel)]="filterType" class="input-field">
           <option value="">Tous les types</option>
           <option value="INCOME">Revenus</option>
           <option value="EXPENSE">Dépenses</option>
         </select>
-        <div class="flex items-center gap-2">
-          <input [(ngModel)]="dateFrom" (ngModelChange)="applyFilters()" type="date" class="input-field" placeholder="Date début"/>
+        <input [(ngModel)]="dateFrom" type="date" class="input-field" placeholder="Date début"/>
+        <input [(ngModel)]="dateTo" type="date" class="input-field" placeholder="Date fin"/>
+        <div class="flex gap-2">
+          <button (click)="applyFilters()" class="flex-1 input-field text-center cursor-pointer" style="color:#818cf8">Filtrer</button>
+          <button (click)="resetFilters()" class="flex-1 input-field text-center cursor-pointer" style="color:#94a3b8">Réinitialiser</button>
         </div>
-        <div class="flex items-center gap-2">
-          <input [(ngModel)]="dateTo" (ngModelChange)="applyFilters()" type="date" class="input-field" placeholder="Date fin"/>
-        </div>
-        <button (click)="resetFilters()" class="input-field text-center cursor-pointer" style="color:#94a3b8">Réinitialiser</button>
       </div>
     </div>
 

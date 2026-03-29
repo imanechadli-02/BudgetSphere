@@ -84,7 +84,7 @@
             </div>
 
             <div class="flex justify-between text-sm mb-2">
-              <span class="font-bold" style="color:#f1f5f9">{{ g.currentAmount | number:'1.0-0' }} €</span>
+              <span class="font-bold" style="color:#f1f5f9">{{ g.contributedAmount | number:'1.0-0' }} €</span>
               <span style="color:#94a3b8">{{ g.targetAmount | number:'1.0-0' }} €</span>
             </div>
 
@@ -135,10 +135,6 @@
         <div>
           <label class="text-sm mb-1.5 block" style="color:#94a3b8">Montant cible (€)</label>
           <input [(ngModel)]="form.targetAmount" name="targetAmount" type="number" placeholder="5000" min="1" class="input-field" required/>
-        </div>
-        <div>
-          <label class="text-sm mb-1.5 block" style="color:#94a3b8">Déjà épargné (€)</label>
-          <input [(ngModel)]="form.currentAmount" name="currentAmount" type="number" placeholder="0" min="0" class="input-field"/>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3">

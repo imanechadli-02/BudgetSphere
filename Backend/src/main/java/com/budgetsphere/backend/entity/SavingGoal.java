@@ -26,17 +26,18 @@ public class SavingGoal {
     private BigDecimal targetAmount;
 
     @Column(nullable = false)
-    private BigDecimal currentAmount;
-
-    @Column(nullable = false)
     private LocalDate deadline;
 
     @Column(nullable = false)
     private BigDecimal monthlyContribution;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "DECIMAL(19,2) DEFAULT 0.00")
     @Builder.Default
     private BigDecimal contributedAmount = BigDecimal.ZERO;
+
+    @Column(nullable = false, columnDefinition = "DECIMAL(19,2) DEFAULT 0.00")
+    @Builder.Default
+    private BigDecimal currentAmount = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

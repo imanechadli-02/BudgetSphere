@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SavingGoalService } from '../../core/services/saving-goal.service';
@@ -24,13 +24,11 @@ const GOAL_COLORS = ['#6366f1', '#a855f7', '#22c55e', '#eab308', '#ec4899', '#06
   `],
   templateUrl: './savings.component.html'
 })
-export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SavingsComponent implements OnInit, OnDestroy {
   private savingService = inject(SavingGoalService);
   private txService = inject(TransactionService);
   private cdr = inject(ChangeDetectorRef);
 
-  totalIncome = 0;
-  totalExpense = 0;
   balance = 0;
 
   readonly today = new Date().toISOString().split('T')[0];
@@ -47,7 +45,6 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   form = {
     title: '',
     targetAmount: null as any,
-    currentAmount: 0 as any,
     deadline: '',
     monthlyContribution: null as any
   };
@@ -55,26 +52,19 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   private radarChart: any = null;
   private lineChart: any = null;
 
-  ngOnInit() { this.load(); this.loadStats(); }
+  ngOnInit() { this.load(); this.loadBalance(); }
 
-  loadStats() {
-    this.txService.getStats().subscribe(s => {
-      this.totalIncome = s.totalIncome;
-      this.totalExpense = s.totalExpense;
-      this.balance = s.balance;
-      this.cdr.detectChanges();
-    });
+  loadBalance() {
+    this.txService.getStats().subscribe(s => { this.balance = s.balance; this.cdr.detectChanges(); });
   }
-
-  ngAfterViewInit() {}
 
   ngOnDestroy() {
     this.radarChart?.destroy();
     this.lineChart?.destroy();
   }
 
-  load() {
-    this.loading = true;
+  load(silent = false) {
+    if (!silent) this.loading = true;
     this.savingService.getAll().subscribe({
       next: res => {
         this.goals = res.content;
@@ -86,7 +76,7 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  get totalSaved() { return this.goals.reduce((s, g) => s + g.currentAmount, 0); }
+  get totalSaved() { return this.goals.reduce((s, g) => s + g.contributedAmount, 0); }
   get countAchieved() { return this.goals.filter(g => g.isAchieved).length; }
   get countActive() { return this.goals.filter(g => !g.isAchieved).length; }
 
@@ -95,7 +85,7 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openModal() {
     this.editId = null; this.formError = '';
-    this.form = { title: '', targetAmount: null, currentAmount: 0, deadline: '', monthlyContribution: null };
+    this.form = { title: '', targetAmount: null, deadline: '', monthlyContribution: null };
     this.showModal = true;
   }
 
@@ -104,7 +94,6 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.form = {
       title: g.title,
       targetAmount: g.targetAmount,
-      currentAmount: g.currentAmount,
       deadline: g.deadline,
       monthlyContribution: g.monthlyContribution
     };
@@ -124,23 +113,15 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
     const payload = {
       title: this.form.title,
       targetAmount: parseFloat(this.form.targetAmount),
-      currentAmount: parseFloat(this.form.currentAmount) || 0,
       deadline: this.form.deadline,
       monthlyContribution: parseFloat(this.form.monthlyContribution) || 0
     };
     const req = this.editId ? this.savingService.update(this.editId, payload) : this.savingService.create(payload);
     req.subscribe({
-      next: (goal) => {
-        if (this.editId) {
-          const idx = this.goals.findIndex(g => g.id === this.editId);
-          if (idx !== -1) this.goals[idx] = goal;
-        } else {
-          this.goals = [goal, ...this.goals];
-        }
+      next: () => {
         this.closeModal();
         this.saving = false;
-        this.cdr.detectChanges();
-        setTimeout(() => this.renderCharts(), 100);
+        this.load(true);
       },
       error: (err) => {
         const e = err.error;
@@ -157,12 +138,7 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   deleteGoal(id: number) {
     if (!confirm('Supprimer cet objectif ?')) return;
-    this.savingService.delete(id).subscribe(() => {
-      this.goals = this.goals.filter(g => g.id !== id);
-      this.loadStats();
-      this.cdr.detectChanges();
-      setTimeout(() => this.renderCharts(), 100);
-    });
+    this.savingService.delete(id).subscribe(() => this.load(true));
   }
 
   openDeposit(g: SavingGoal) {
@@ -175,13 +151,9 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmDeposit() {
     if (!this.depositGoal || !this.depositAmount || this.depositAmount <= 0) return;
-    this.savingService.addContribution(this.depositGoal.id, this.depositAmount).subscribe(goal => {
-      const idx = this.goals.findIndex(g => g.id === goal.id);
-      if (idx !== -1) this.goals[idx] = goal;
+    this.savingService.addContribution(this.depositGoal.id, this.depositAmount).subscribe(() => {
       this.closeDeposit();
-      this.loadStats();
-      this.cdr.detectChanges();
-      setTimeout(() => this.renderCharts(), 100);
+      this.load(true);
     });
   }
 
@@ -248,9 +220,9 @@ export class SavingsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private generateHistory(g: SavingGoal): number[] {
-    const step = g.monthlyContribution || (g.currentAmount / 6);
+    const step = g.monthlyContribution || (g.contributedAmount / 6);
     return Array.from({ length: 6 }, (_, i) =>
-      Math.max(0, Math.round(g.currentAmount - step * (5 - i)))
+      Math.max(0, Math.round(g.contributedAmount - step * (5 - i)))
     );
   }
 }

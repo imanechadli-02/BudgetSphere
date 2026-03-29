@@ -5,18 +5,11 @@ import { SidebarComponent } from '../../shared/components/sidebar/sidebar.compon
 import { AuthService } from '../../core/services/auth.service';
 import { TransactionService } from '../../core/services/transaction.service';
 import { SavingGoalService } from '../../core/services/saving-goal.service';
-import { Transaction, SavingGoal } from '../../core/models/models';
+import { Transaction, SavingGoal, CATEGORY_LABELS, CATEGORY_ICONS } from '../../core/models/models';
 import { forkJoin } from 'rxjs';
 
-const CAT_LABELS: Record<string, string> = {
-  SALARY: 'Salaire', FOOD: 'Alimentation', TRANSPORT: 'Transport', HEALTH: 'Santé',
-  ENTERTAINMENT: 'Loisirs', EDUCATION: 'Éducation', SHOPPING: 'Shopping',
-  HOUSING: 'Logement', SAVINGS: 'Épargne', OTHER: 'Autre'
-};
-const CAT_ICONS: Record<string, string> = {
-  SALARY: '💰', FOOD: '🛒', TRANSPORT: '🚗', HEALTH: '💊',
-  ENTERTAINMENT: '🎬', EDUCATION: '📚', SHOPPING: '🛍️', HOUSING: '🏠', SAVINGS: '🏦', OTHER: '📦'
-};
+const CAT_LABELS = CATEGORY_LABELS;
+const CAT_ICONS = CATEGORY_ICONS;
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#eab308', '#22c55e', '#ef4444', '#06b6d4', '#f97316'];
 
 @Component({
@@ -78,13 +71,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       goals: this.savingGoalService.getAll(0, 10)
     }).subscribe({
       next: ({ transactions, goals }) => {
-        console.log('transactions reçues:', transactions);
-        console.log('premier élément:', transactions.content[0]);
         this.allTransactions = transactions.content;
         this.transactions = transactions.content.slice(0, 5);
         this.savingGoals = goals.content;
         this.compute();
-        console.log('totalIncome:', this.totalIncome, 'totalExpense:', this.totalExpense);
         this.cdr.detectChanges();
         setTimeout(() => this.initCharts(), 0);
       },
@@ -110,7 +100,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.incomeCount = all.filter(t => t.type === 'INCOME').length;
     this.expenseCount = all.filter(t => t.type === 'EXPENSE').length;
     this.achievedGoals = this.savingGoals.filter(g => g.isAchieved).length;
-    this.totalSaved = this.savingGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
+    this.totalSaved = this.savingGoals.reduce((s, g) => s + Number(g.contributedAmount), 0);
 
     // Mois actuel vs précédent
     const inMonth = (t: Transaction, m: number, y: number) => {

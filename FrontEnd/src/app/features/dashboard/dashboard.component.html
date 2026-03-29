@@ -197,7 +197,7 @@
                 <span *ngIf="goal.isAchieved" class="text-xs">✅</span>
                 <span class="font-medium" style="color:#f1f5f9">{{ goal.title }}</span>
               </div>
-              <span style="color:#94a3b8">{{ goal.currentAmount | number:'1.0-0' }} / {{ goal.targetAmount | number:'1.0-0' }} €</span>
+              <span style="color:#94a3b8">{{ goal.contributedAmount | number:'1.0-0' }} / {{ goal.targetAmount | number:'1.0-0' }} €</span>
             </div>
             <div class="h-2 rounded-full overflow-hidden" style="background:#334155">
               <div class="h-full rounded-full" [style.width.%]="goal.progressPercentage"

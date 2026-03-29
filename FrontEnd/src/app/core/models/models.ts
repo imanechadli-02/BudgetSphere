@@ -14,7 +14,7 @@ export interface AuthResponse {
 
 export interface Transaction {
   id: number;
-  amount: any;
+  amount: number;
   type: 'INCOME' | 'EXPENSE';
   date: string;
   description: string;
@@ -27,7 +27,7 @@ export interface SavingGoal {
   id: number;
   title: string;
   targetAmount: number;
-  currentAmount: number;
+  contributedAmount: number;
   remainingAmount: number;
   deadline: string;
   monthlyContribution: number;
@@ -38,25 +38,12 @@ export interface SavingGoal {
   userId: number;
 }
 
-export interface Budget {
-  id: number;
-  category: string;
-  monthlyLimit: number;
-  spent: number;
-  remaining: number;
-  percentage: number;
-  month: number;
-  year: number;
-  userId: number;
-}
-
 export interface VariableExpense {
   id: number;
   title: string;
   amount: number;
   description: string;
   expenseDate: string;
-  endDate: string;
   category: string;
   userId: number;
 }
@@ -91,3 +78,15 @@ export interface PageResponse<T> {
   first: boolean;
   last: boolean;
 }
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  SALARY: 'Salaire', FOOD: 'Alimentation', TRANSPORT: 'Transport',
+  HEALTH: 'Santé', ENTERTAINMENT: 'Loisirs', EDUCATION: 'Éducation',
+  SHOPPING: 'Shopping', HOUSING: 'Logement', SAVINGS: 'Épargne', OTHER: 'Autre'
+};
+
+export const CATEGORY_ICONS: Record<string, string> = {
+  SALARY: '💰', FOOD: '🛒', TRANSPORT: '🚗', HEALTH: '💊',
+  ENTERTAINMENT: '🎬', EDUCATION: '📚', SHOPPING: '🛍️', HOUSING: '🏠',
+  SAVINGS: '🏦', OTHER: '📦'
+};

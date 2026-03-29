@@ -16,7 +16,6 @@ public class VariableExpenseDto {
     private String title;
     private BigDecimal amount;
     private String description;
-    private LocalDate endDate;
     private LocalDate expenseDate;
     private ExpenseCategory category;
     private Long userId;

@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PageResponse, Transaction } from '../models/models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class TransactionService {
-  private apiUrl = 'http://localhost:8080/api/user/transactions';
+  private apiUrl = `${environment.apiUrl}/api/user/transactions`;
 
   constructor(private http: HttpClient) {}
 
@@ -13,7 +14,7 @@ export class TransactionService {
     return this.http.get<any>(`${this.apiUrl}/stats`);
   }
 
-  getAll(page = 0, size = 10, type?: string, category?: string, from?: string, to?: string): Observable<PageResponse<Transaction>> {
+  getAll(page = 0, size = 10, type?: string, from?: string, to?: string): Observable<PageResponse<Transaction>> {
     const base = type ? `${this.apiUrl}/type/${type}` : this.apiUrl;
     let params = `page=${page}&size=${size}`;
     if (from) params += `&from=${from}`;
